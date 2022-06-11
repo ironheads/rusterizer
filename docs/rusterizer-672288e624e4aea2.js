@@ -275,7 +275,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('rusterizer-81ebfbfb6d23a5df_bg.wasm', import.meta.url);
+        input = new URL('rusterizer-672288e624e4aea2_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -650,12 +650,12 @@ async function init(input) {
         var ret = wasm.memory;
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper338 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 151, __wbg_adapter_24);
+    imports.wbg.__wbindgen_closure_wrapper337 = function(arg0, arg1, arg2) {
+        var ret = makeMutClosure(arg0, arg1, 149, __wbg_adapter_24);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper546 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 216, __wbg_adapter_27);
+    imports.wbg.__wbindgen_closure_wrapper545 = function(arg0, arg1, arg2) {
+        var ret = makeMutClosure(arg0, arg1, 214, __wbg_adapter_27);
         return addHeapObject(ret);
     };
 

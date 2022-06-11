@@ -75,9 +75,15 @@ impl Model {
 
 #[derive(Clone, Debug)]
 pub struct Wavefront {
+    // the vertices coordinates
     pub vertices: Vec<Vec3f>,
+    // the u,v coordinates
     pub texture_coord: Vec<[f32; 2]>,
+    // the normal vectors
     pub normals: Vec<Vec3f>,
+    // faces:
+    // 0: the ids of vertexs (3 vertices)
+    // 1: the idx of texture points (3 vertices)
     pub faces: Vec<([i32; 3], [i32; 3])>,
 }
 

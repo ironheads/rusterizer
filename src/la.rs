@@ -93,10 +93,17 @@ pub type Matrix<const X: usize, const Y: usize> = [[f32; X]; Y];
 
 impl<const T: usize> Into<Vec3f> for Matrix<1, T> {
     fn into(self) -> Vec3f {
+        assert!(self.len() >= 3);
         assert!(self[0].len() == 1);
-        Vec3f(self[0][0], self[1][0], self[2][0])
+        if T == 4 {
+            Vec3f(self[0][0], self[1][0], self[2][0])
+        } else {
+            Vec3f(self[0][0]/self[3][0], self[1][0]/self[3][0], self[2][0]/self[3][0])
+        }
     }
 }
+
+
 
 impl<const X: usize, const Y: usize> MatrixI<X, Y> for Matrix<X, Y> {
     fn zeroed() -> Self {
@@ -205,43 +212,6 @@ pub fn interpolatev(a: &Vec3f, b: &Vec3f, t: f32) -> Vec3f {
 }
 
 
-
-pub fn persp(c: f32, v1: &Vec3f) -> Vec3f {
-    Vec3f(
-        v1.0 / (1.08 - v1.2 / c),
-        v1.1 / (1.08 - v1.2 / c),
-        v1.2 / (1.08 - v1.2 / c),
-    )
-}
-
-pub fn get_look_at(p: &Vec3f, c: &Vec3f) -> Matrix<4, 4> {
-    let up = Vec3f(0.0, 1.0, 0.0);
-
-    let z = p.sub(c).normalize();
-    let x = up.cross(&z).normalize();
-    let y = z.cross(&x).normalize();
-
-    let minv = [
-        [x.0, x.1, x.2, 0.0],
-        [y.0, y.1, y.2, 0.0],
-        [z.0, z.1, z.2, 0.0],
-        [0.0, 0.0, 0.0, 1.0],
-    ];
-
-    let tr = [
-        [1.0, 0.0, 0.0, -c.0],
-        [0.0, 1.0, 0.0, -c.1],
-        [0.0, 0.0, 1.0, -c.2],
-        [0.0, 0.0, 0.0, 1.0],
-    ];
-
-    minv.mul(&tr) // 4x4
-}
-
-pub fn look_at(m: &Matrix<4, 4>, v: &Vec3f) -> Vec3f {
-    let r = m.mul(&v.embed::<4>(1.0));
-    Vec3f(r[0][0] / r[3][0], r[1][0] / r[3][0], r[2][0] / r[3][0])
-}
 
 
 

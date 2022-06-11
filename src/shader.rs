@@ -1,10 +1,11 @@
 use std::mem;
 
 use crate::{
-    la::{look_at, persp , Matrix, MatrixI, Vec3f},
+    la::{Matrix, MatrixI, Vec3f},
     model::Model,
     tga::{self, Color},
-    transform::{viewport,barycentric}
+    transform::{viewport,barycentric,get_prespective_projection,get_viewport_matrix},
+    utils::degrees_to_radians,
 };
 
 #[derive(Debug, Clone)]
@@ -138,8 +139,14 @@ impl Shader for BasicShader<'_> {
             self.varying_uv[i][vertex] = t[i];
         }
 
-        let persp = persp(5.0, &look_at(&self.lookat_m, &v));
-        let ss = viewport(&persp, self.out_texture.width, self.out_texture.height);
+        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.height as f32/self.out_texture.width as f32,0.01,3f32);
+        let viewport_matrix = get_viewport_matrix(0f32, 0f32, self.out_texture.width, self.out_texture.height);
+        let model_view = self.lookat_m;
+        
+        let ss = viewport_matrix.mul(&perspective_matrix)
+                                        .mul(&model_view)
+                                        .mul(&v.embed::<4>(1f32))
+                                        .into();
 
         self.vertices[vertex] = ss;
 

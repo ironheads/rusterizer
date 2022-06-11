@@ -6,10 +6,12 @@ use yew::services::fetch::{FetchTask, Request, Response, Uri};
 use yew::services::{ConsoleService, FetchService};
 use yew::{html, Component, Html, NodeRef};
 
-use crate::la::{get_look_at, look_at, persp, Matrix, MatrixI, Vec3f};
+use crate::la::{Matrix, MatrixI, Vec3f};
 use crate::model::{self, Wavefront};
 use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
 use crate::tga::Image;
+use crate::camera::Camera;
+// use crate::transform::{get_prespective_projection};
 
 pub enum Msg {
     Texture(Vec<u8>),
@@ -48,8 +50,7 @@ pub struct Model {
     normals: Option<Image>,
     model: Option<model::Model>,
     model_type: ModelType,
-    camvec: Vec3f,
-    cam_lookat: Vec3f,
+    camera: Camera,
     rotation_start: Option<(i32, i32, Vec3f)>,
     move_start: Option<(i32, i32, Vec3f)>,
 }
@@ -62,11 +63,11 @@ impl Model {
         let mut z_buffer = Image::new(width, height);
         let mut light_texture = Image::new(width, height);
 
-        let camvec = &self.camvec;
-        let lookat_m = get_look_at(&camvec.add(&self.cam_lookat), &self.cam_lookat);
+        let camera = &self.camera;
+        let lookat_m = camera.get_lookat_view();
         let lookat_mi = lookat_m.inverse().transpose();
-        let light_dir: Vec3f = persp(5.0, &look_at(&lookat_m, &Vec3f(1.0, -0.0, 0.5))).normalize();
-
+        // let light_dir: Vec3f = get_prespective_projection(5f32).mul(&lookat_m).mul(&Vec3f(1.0, -0.0, 0.5).embed::<4>(1f32)).into();
+        let light_dir: Vec3f = Vec3f(1.0, -0.0, 0.5).normalize();
         let model = self.model.as_ref().unwrap();
         let mut shader = BasicShader {
             conf: self.conf.clone(),
@@ -184,8 +185,7 @@ impl Component for Model {
             normals: None,
             model: None,
             model_type: ModelType::AFRICAN,
-            camvec: Vec3f(0.5, 0.5, 1.0),
-            cam_lookat: Vec3f(0.0, 0.0, 0.0),
+            camera: Default::default(),
             rotation_start: None,
             move_start: None,
         }
@@ -259,7 +259,7 @@ impl Component for Model {
                 true
             }
             Msg::Upd(v) => {
-                self.camvec = v;
+                self.camera.position = v;
                 if self.ready() {
                     self.render();
                 }
@@ -290,7 +290,7 @@ impl Component for Model {
                 true
             }
             Msg::RotationStarted(x, y) => {
-                self.rotation_start = Some((x, y, self.camvec));
+                self.rotation_start = Some((x, y, self.camera.position));
                 true
             }
             Msg::Noop => false,
@@ -299,7 +299,7 @@ impl Component for Model {
                 true
             }
             Msg::MoveStarted(x, y) => {
-                self.move_start = Some((x, y, self.cam_lookat));
+                self.move_start = Some((x, y, self.camera.look_at));
                 true
             }
             Msg::MoveEnded => {
@@ -308,15 +308,15 @@ impl Component for Model {
             }
             Msg::UpdC(Vec3f(dx, dy, _), old_place) => {
                 ConsoleService::log(format!("{:?}, {:?}", dx, dy).as_str());
-                let camvec = Vec3f(self.camvec.0, 0.0, self.camvec.2)
+                let camvec = Vec3f(self.camera.position.0, 0.0, self.camera.position.2)
                     .normalize()
                     .mulf(dy / 500.0);
                 let perp: Vec3f = Vec3f(0.0, 1.0, 0.0)
-                    .cross(&self.camvec)
+                    .cross(&self.camera.position)
                     .normalize()
                     .mulf(dx / 500.0);
 
-                self.cam_lookat = old_place.add(&perp).add(&camvec);
+                self.camera.look_at = old_place.add(&perp).add(&camvec);
 
                 if self.ready() {
                     self.render();
@@ -368,7 +368,7 @@ impl Component for Model {
     }
 
     fn view(&self) -> Html {
-        let Vec3f(x, y, z) = self.camvec;
+        let Vec3f(x, y, z) = self.camera.position;
         let pos = self.rotation_start;
         let place = self.move_start;
         html! {

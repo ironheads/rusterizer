@@ -10,8 +10,10 @@ mod shader;
 mod tga;
 mod camera;
 mod transform;
+mod utils;
 #[cfg(not(feature = "local"))]
 mod web;
+
 
 #[cfg(feature = "local")]
 use crate::{

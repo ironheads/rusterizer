@@ -15,6 +15,17 @@ impl Vec3f {
         v
     }
 
+
+    pub fn x(&self) -> f32 {
+        self.0
+    }
+    pub fn y(&self) -> f32 {
+        self.1
+    }
+    pub fn z(&self) -> f32 {
+        self.2
+    }
+    
     pub fn cross(&self, v: &Vec3f) -> Self {
         Vec3f(
             self.1 * v.2 - self.2 * v.1,
@@ -70,6 +81,7 @@ impl Into<Matrix<1, 3>> for &Vec3f {
 
 pub trait MatrixI<const X: usize, const Y: usize> {
     fn zeroed() -> Self;
+    fn identity() -> Self;
     fn inverse(&self) -> Self
     where
         [(); X * 2]: Sized;
@@ -89,6 +101,15 @@ impl<const T: usize> Into<Vec3f> for Matrix<1, T> {
 impl<const X: usize, const Y: usize> MatrixI<X, Y> for Matrix<X, Y> {
     fn zeroed() -> Self {
         [[0.0f32; X]; Y]
+    }
+
+    fn identity() -> Self {
+        assert!(X == Y);
+        let mut mat = [[0.0f32; X]; Y];
+        for i in 0..X {
+            mat[i][i]=1.0f32;
+        }
+        mat
     }
 
     fn inverse(&self) -> Self
@@ -183,15 +204,7 @@ pub fn interpolatev(a: &Vec3f, b: &Vec3f, t: f32) -> Vec3f {
     )
 }
 
-pub fn barycentric(a: &Vec3f, b: &Vec3f, c: &Vec3f, p: (f32, f32)) -> Vec3f {
-    let cross =
-        Vec3f(c.0 - a.0, b.0 - a.0, a.0 - p.0).cross(&Vec3f(c.1 - a.1, b.1 - a.1, a.1 - p.1));
-    Vec3f(
-        1.0 - (cross.1 + cross.0) / cross.2,
-        cross.1 / cross.2,
-        cross.0 / cross.2,
-    )
-}
+
 
 pub fn persp(c: f32, v1: &Vec3f) -> Vec3f {
     Vec3f(
@@ -230,11 +243,7 @@ pub fn look_at(m: &Matrix<4, 4>, v: &Vec3f) -> Vec3f {
     Vec3f(r[0][0] / r[3][0], r[1][0] / r[3][0], r[2][0] / r[3][0])
 }
 
-pub fn to_screen_space(v: &Vec3f, width: i32, height: i32) -> Vec3f {
-    let x0 = (v.0 + 1.) * (width - 1) as f32 / 2.;
-    let y0 = (v.1 + 1.) * (height - 1) as f32 / 2.;
-    Vec3f(x0, y0, ((v.2 + 1.) / 2.) * 255.0)
-}
+
 
 #[cfg(test)]
 mod tests {

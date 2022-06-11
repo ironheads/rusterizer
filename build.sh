@@ -13,11 +13,11 @@ trunk build --release
 rm index.html
 cd dist
 
-pattern="index-*_bg.wasm"
+pattern="rusterizer-*_bg.wasm"
 files=( $pattern )
 wasm_file="${files[0]}"
 
-pattern="index-*.js"
+pattern="rusterizer-*.js"
 files=( $pattern )
 js_file="${files[0]}"
 

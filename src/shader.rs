@@ -1,9 +1,10 @@
 use std::mem;
 
 use crate::{
-    la::{barycentric, look_at, persp, to_screen_space, Matrix, MatrixI, Vec3f},
+    la::{look_at, persp , Matrix, MatrixI, Vec3f},
     model::Model,
     tga::{self, Color},
+    transform::{viewport,barycentric}
 };
 
 #[derive(Debug, Clone)]
@@ -22,7 +23,7 @@ impl ShaderConf {
             spec_light: true,
             texture: true,
             normals: true,
-            occlusion: false,
+            occlusion: true,
         }
     }
 }
@@ -44,23 +45,28 @@ pub struct LightShader<'a> {
 }
 
 impl Shader for LightShader<'_> {
+
     fn vertex(&mut self, face: usize, vertex: usize) -> Vec3f {
         let v = self.model.vertex(face, vertex);
         let t = self.model.texture_coords(face, vertex);
 
         for i in 0..2 {
+            // the vertex(whose id = vertex)'s u and v assigned in varying_uv 
             self.varying_uv[i][vertex] = t[i];
         }
 
-        let ss = to_screen_space(&v, self.out_texture.width, self.out_texture.height);
+        // calculate the postion in out_texture
+        let ss = viewport(&v, self.out_texture.width, self.out_texture.height);
 
+        // the vertex(whose id = vertex)'s  x,y,z (z is calculated in [0,255]) assigned in varying_uv
         self.varying_xy[0][vertex] = ss.0;
         self.varying_xy[1][vertex] = ss.1;
         self.varying_xy[2][vertex] = ss.2;
         ss
     }
-
+    
     fn fragment(&mut self, bar: &Vec3f) {
+        // bar : the postion of the fragment
         if bar.0 < 0.0 || bar.1 < 0.0 || bar.2 < 0.0 {
             return;
         }
@@ -133,7 +139,7 @@ impl Shader for BasicShader<'_> {
         }
 
         let persp = persp(5.0, &look_at(&self.lookat_m, &v));
-        let ss = to_screen_space(&persp, self.out_texture.width, self.out_texture.height);
+        let ss = viewport(&persp, self.out_texture.width, self.out_texture.height);
 
         self.vertices[vertex] = ss;
 

@@ -8,8 +8,11 @@ mod la;
 mod model;
 mod shader;
 mod tga;
+mod camera;
+mod transform;
 #[cfg(not(feature = "local"))]
 mod web;
+
 #[cfg(feature = "local")]
 use crate::{
     la::{get_look_at, look_at, Matrix, MatrixI, Vec3f},
@@ -17,10 +20,10 @@ use crate::{
     shader::{triangle, BasicShader, Shader, ShaderConf},
     tga::Image,
 };
-#[cfg(not(feature = "local"))]
+#[cfg(not(feature = "raytracing"))]
 use web::web;
 
-#[cfg(not(feature = "local"))]
+#[cfg(not(feature = "raytracing"))]
 fn main() {
     web();
 }

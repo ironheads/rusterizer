@@ -12,7 +12,8 @@ use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
 use crate::tga::Image;
 use crate::camera::Camera;
 // use crate::transform::{get_prespective_projection};
-
+const WIDTH:u32 = 860;
+const HEIGHT:u32 = 512;
 pub enum Msg {
     Texture(Vec<u8>),
     Model(Vec<u8>),
@@ -57,8 +58,8 @@ pub struct Model {
 
 impl Model {
     fn render(&mut self) {
-        let width: i32 = 512;
-        let height: i32 = 512;
+        let width: i32 = WIDTH as i32;
+        let height: i32 = HEIGHT as i32;
         let mut out_texture = Image::new(width, height);
         let mut z_buffer = Image::new(width, height);
         let mut light_texture = Image::new(width, height);
@@ -119,6 +120,8 @@ impl Model {
         out_texture.apply_gamma(1.5);
 
         let canvas = self.node_ref.cast::<HtmlCanvasElement>().unwrap();
+        // canvas.set_width(WIDTH);
+        // canvas.set_height(HEIGHT);
         let ctx: CanvasRenderingContext2d = canvas
             .get_context("2d")
             .unwrap()
@@ -126,7 +129,7 @@ impl Model {
             .dyn_into()
             .unwrap();
         let img = if self.zbuff { z_buffer } else { out_texture }.get_raw_bytes();
-        let id = ImageData::new_with_u8_clamped_array(Clamped(&img[..]), 512).unwrap();
+        let id = ImageData::new_with_u8_clamped_array_and_sh(Clamped(&img[..]),WIDTH,HEIGHT).unwrap();
         ctx.put_image_data(&id, 0.0, 0.0).unwrap();
     }
 
@@ -408,7 +411,7 @@ impl Component for Model {
 
             })>
                 <canvas
-                ref={self.node_ref.clone()} width="512" height="512" />
+                ref={self.node_ref.clone()} width=format!("{}", WIDTH) height=format!("{}", HEIGHT) />
                 <div class="menu">
                     { if self.ready() { html! {
                         <>

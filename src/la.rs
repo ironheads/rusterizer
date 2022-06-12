@@ -96,9 +96,9 @@ impl<const T: usize> Into<Vec3f> for Matrix<1, T> {
         assert!(self.len() >= 3);
         assert!(self[0].len() == 1);
         if T == 4 {
-            Vec3f(self[0][0], self[1][0], self[2][0])
-        } else {
             Vec3f(self[0][0]/self[3][0], self[1][0]/self[3][0], self[2][0]/self[3][0])
+        } else { 
+            Vec3f(self[0][0], self[1][0], self[2][0])
         }
     }
 }

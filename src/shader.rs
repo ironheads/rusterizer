@@ -139,8 +139,10 @@ impl Shader for BasicShader<'_> {
             self.varying_uv[i][vertex] = t[i];
         }
 
-        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.height as f32/self.out_texture.width as f32,0.01,3f32);
-        let viewport_matrix = get_viewport_matrix(0f32, 0f32, self.out_texture.width, self.out_texture.height);
+        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.width as f32/self.out_texture.height as f32,0.01,1000f32);
+
+        let viewport_matrix = get_viewport_matrix(self.out_texture.width, self.out_texture.height);
+
         let model_view = self.lookat_m;
         
         let ss = viewport_matrix.mul(&perspective_matrix)
@@ -234,6 +236,8 @@ pub fn triangle(v1: &Vec3f, v2: &Vec3f, v3: &Vec3f, sh: &mut dyn Shader) {
         .sub(&Vec3f(v1.0, v1.1, v1.2))
         .cross(&Vec3f(v3.0, v3.1, v3.2).sub(&Vec3f(v1.0, v1.1, v1.2)));
 
+    // clip space 
+    // clip z<0
     if z.2 < 0.0 {
         return;
     }
@@ -295,4 +299,35 @@ fn line(
             img.set_pixel(x.round() as i32, y as i32, color);
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::camera::Camera;
+
+    #[test]
+    fn test_matrixs(){
+        let camera:Camera = Camera { position: Vec3f(100f32,100f32,100f32), look_at: Vec3f(0f32,0f32,0f32) };
+        let lookat_m = camera.get_lookat_view();
+        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),1f32,0.1,5f32);
+        let mut viewport_matrix = get_viewport_matrix(512, 512);
+        let model_view = lookat_m;
+        println!("{:?}",model_view);
+        println!("{:?}",viewport_matrix);
+        println!("{:?}",perspective_matrix);
+        for i in [-1f32,1f32] {
+            for j in [-1f32,1f32] {
+                for k in [-1f32,1f32] {
+                    let v = Vec3f(i,j,k);
+                    let res:Vec3f = model_view
+                                    .mul(&v.embed::<4>(1f32))
+                                    .into();
+                    println!("{:?}",res);
+                }   
+            }
+        }
+        
+    }
+
 }

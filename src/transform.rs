@@ -12,31 +12,30 @@ pub fn viewport(v: &Vec3f, width: i32, height: i32) -> Vec3f {
     Vec3f(x0, y0, ((v.2 + 1.) / 2.) * 255.0)
 }
 
-pub fn get_viewport_matrix(x: f32, y: f32, w:i32, h:i32) -> Matrix<4,4> {
+pub fn get_viewport_matrix(w:i32, h:i32) -> Matrix<4,4> {
     let mut viewport = Matrix::identity();
     viewport[0][0] = w as f32/ 2.;
     viewport[1][1] = h as f32/ 2.;
     viewport[2][2] = Z_DEPTH / 2.;
 
-    viewport[0][3] = x + w as f32/ 2.;
-	viewport[1][3] = y + h as f32/ 2.;
+    viewport[0][3] = w as f32/ 2.;
+	viewport[1][3] = h as f32/ 2.;
 	viewport[2][3] = Z_DEPTH / 2.;
 
-    viewport[3][3] = 1.;
-    
     viewport
 }
 
 pub fn get_prespective_projection(fovyInRadians:f32,aspect:f32, zNear:f32, zFar:f32) -> Matrix<4,4>{
-    let mut projection = Matrix::zeroed();
+    let mut projection = Matrix::identity();
     let theta = fovyInRadians/2f32;
     projection[0][0] = 1.0/(aspect*theta.tan());
     projection[1][1] = 1.0 / theta.tan();
-    projection[2][2] = (zFar+zNear)/(zFar-zNear);
+    projection[2][2] = (zFar+zNear)/(zNear-zFar);
 
     projection[2][3] = 2f32*zFar*zNear/(zNear-zFar);
-    projection[3][2] = 1f32;
+    projection[3][2] = -1f32;
     projection
+    // Matrix::identity()
 }
 
 // calculate the bary centric coordniates 

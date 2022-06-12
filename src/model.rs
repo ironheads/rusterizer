@@ -170,3 +170,4 @@ impl Wavefront {
         Wavefront::new(vertices, faces, normals, tc)
     }
 }
+

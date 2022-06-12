@@ -14,7 +14,7 @@ pub struct Camera {
 
 impl Default for Camera {
     fn default() -> Self {
-        Self { position: Vec3f(0.5, 0.5, 1.0), look_at: Vec3f::zeroed() }
+        Self { position: Vec3f(5f32, 5f32, 5f32), look_at: Vec3f::zeroed() }
     }
 }
 impl Camera {
@@ -24,6 +24,7 @@ impl Camera {
             look_at: foc
         }
     }
+
 
     pub fn get_lookat_view(self) -> Matrix<4,4> {
         let up = Vec3f(0.0, 1.0, 0.0);
@@ -40,9 +41,9 @@ impl Camera {
         ];
 
         let tr= [
-            [1.0, 0.0, 0.0, -self.look_at.0],
-            [0.0, 1.0, 0.0, -self.look_at.1],
-            [0.0, 0.0, 1.0, -self.look_at.2],
+            [1.0, 0.0, 0.0, -self.position.0],
+            [0.0, 1.0, 0.0, -self.position.1],
+            [0.0, 0.0, 1.0, -self.position.2],
             [0.0, 0.0, 0.0, 1.0],
         ];
 

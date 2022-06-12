@@ -275,7 +275,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('rusterizer-672288e624e4aea2_bg.wasm', import.meta.url);
+        input = new URL('rusterizer-2fcaa06f1d395d01_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};
@@ -486,8 +486,8 @@ async function init(input) {
         var ret = getObject(arg0).getContext(getStringFromWasm0(arg1, arg2));
         return isLikeNone(ret) ? 0 : addHeapObject(ret);
     }, arguments) };
-    imports.wbg.__wbg_newwithu8clampedarray_45da2809f7882d12 = function() { return handleError(function (arg0, arg1, arg2) {
-        var ret = new ImageData(getClampedArrayU8FromWasm0(arg0, arg1), arg2 >>> 0);
+    imports.wbg.__wbg_newwithu8clampedarrayandsh_1b8c6e1bede43657 = function() { return handleError(function (arg0, arg1, arg2, arg3) {
+        var ret = new ImageData(getClampedArrayU8FromWasm0(arg0, arg1), arg2 >>> 0, arg3 >>> 0);
         return addHeapObject(ret);
     }, arguments) };
     imports.wbg.__wbg_lastChild_ca5bac177ef353f6 = function(arg0) {
@@ -651,11 +651,11 @@ async function init(input) {
         return addHeapObject(ret);
     };
     imports.wbg.__wbindgen_closure_wrapper337 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 149, __wbg_adapter_24);
+        var ret = makeMutClosure(arg0, arg1, 150, __wbg_adapter_24);
         return addHeapObject(ret);
     };
-    imports.wbg.__wbindgen_closure_wrapper545 = function(arg0, arg1, arg2) {
-        var ret = makeMutClosure(arg0, arg1, 214, __wbg_adapter_27);
+    imports.wbg.__wbindgen_closure_wrapper546 = function(arg0, arg1, arg2) {
+        var ret = makeMutClosure(arg0, arg1, 215, __wbg_adapter_27);
         return addHeapObject(ret);
     };
 

@@ -10,7 +10,7 @@ use crate::la::{Matrix, MatrixI, Vec3f};
 use crate::model::{self, Wavefront};
 use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
 use crate::tga::{Image,ZBuffer};
-use crate::camera::{Camera, self};
+use crate::camera::{self, CameraTrait, PerspectiveCamera};
 
 // use crate::transform::{get_prespective_projection};
 const WIDTH:u32 = 860;
@@ -41,7 +41,7 @@ pub enum ModelType {
     AFRICAN,
 }
 
-pub struct Model {
+pub struct Model<T: CameraTrait> where Model<T>: yew::Component {
     conf: ShaderConf,
     zbuff: bool,
     node_ref: NodeRef,
@@ -53,12 +53,12 @@ pub struct Model {
     normals: Option<Image>,
     model: Option<model::Model>,
     model_type: ModelType,
-    camera: Camera,
+    camera: T,
     rotation_start: Option<(i32, i32, Vec3f)>,
     move_start: Option<(i32, i32, Vec3f)>,
 }
 
-impl Model {
+impl<T> Model<T> where T:CameraTrait,Model<T>: yew::Component, <Model<T> as yew::Component>::Message: From<Msg>  {
     fn render(&mut self) {
         let width: i32 = WIDTH as i32;
         let height: i32 = HEIGHT as i32;
@@ -67,7 +67,7 @@ impl Model {
         let mut light_texture = Image::new(width, height);
 
         let camera = &self.camera;
-        let lookat_m = camera.get_lookat_view();
+        let lookat_m = camera.get_lookat().clone();
         let lookat_mi = lookat_m.inverse().transpose();
         // let light_dir: Vec3f = get_prespective_projection(5f32).mul(&lookat_m).mul(&Vec3f(1.0, -0.0, 0.5).embed::<4>(1f32)).into();
         let light_dir: Vec3f = Vec3f(1.0, -0.0, 0.5).normalize();
@@ -85,6 +85,7 @@ impl Model {
             varying_xy: Matrix::zeroed(),
             vertices: [Vec3f::zeroed(); 3],
             light_texture: &mut light_texture,
+            project_m: camera.get_projection().clone(),
         };
 
         for f in 0..model.num_faces() {
@@ -164,7 +165,7 @@ impl Model {
     }
 }
 
-impl Component for Model {
+impl Component for Model<PerspectiveCamera> {
     type Message = Msg;
     type Properties = ();
 
@@ -190,7 +191,7 @@ impl Component for Model {
             normals: None,
             model: None,
             model_type: ModelType::AFRICAN,
-            camera: Default::default(),
+            camera: PerspectiveCamera::new(50f32,WIDTH as f32/HEIGHT as f32,0.01f32,1000f32),
             rotation_start: None,
             move_start: None,
         }
@@ -264,7 +265,7 @@ impl Component for Model {
                 true
             }
             Msg::Upd(v) => {
-                self.camera.position = v;
+                self.camera.set_position(v);
                 if self.ready() {
                     self.render();
                 }
@@ -295,7 +296,7 @@ impl Component for Model {
                 true
             }
             Msg::RotationStarted(x, y) => {
-                self.rotation_start = Some((x, y, self.camera.position));
+                self.rotation_start = Some((x, y, self.camera.position()));
                 true
             }
             Msg::Noop => false,
@@ -304,7 +305,7 @@ impl Component for Model {
                 true
             }
             Msg::MoveStarted(x, y) => {
-                self.move_start = Some((x, y, self.camera.view));
+                self.move_start = Some((x, y, self.camera.get_focus()));
                 true
             }
             Msg::MoveEnded => {
@@ -313,15 +314,15 @@ impl Component for Model {
             }
             Msg::UpdC(Vec3f(dx, dy, _), old_place) => {
                 ConsoleService::log(format!("{:?}, {:?}", dx, dy).as_str());
-                let camvec = Vec3f(self.camera.position.0, 0.0, self.camera.position.2)
+                let camvec = Vec3f(self.camera.position().0, 0.0, self.camera.position().2)
                     .normalize()
                     .mulf(dy / 500.0);
                 let perp: Vec3f = Vec3f(0.0, 1.0, 0.0)
-                    .cross(&self.camera.position)
+                    .cross(&self.camera.position())
                     .normalize()
                     .mulf(dx / 500.0);
 
-                self.camera.view = old_place.add(&perp).add(&camvec);
+                self.camera.set_focus(old_place.add(&perp).add(&camvec));
 
                 if self.ready() {
                     self.render();
@@ -381,7 +382,7 @@ impl Component for Model {
     }
 
     fn view(&self) -> Html {
-        let Vec3f(x, y, z) = self.camera.position;
+        let Vec3f(x, y, z) = self.camera.position();
         let pos = self.rotation_start;
         let place = self.move_start;
         html! {
@@ -481,5 +482,5 @@ impl Component for Model {
 }
 
 pub fn web() {
-    yew::start_app::<Model>();
+    yew::start_app::<Model<PerspectiveCamera>>();
 }

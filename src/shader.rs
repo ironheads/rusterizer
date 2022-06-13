@@ -4,8 +4,9 @@ use crate::{
     la::{Matrix, MatrixI, Vec3f},
     model::Model,
     tga::{self, Color},
-    transform::{viewport,barycentric,get_prespective_projection,get_viewport_matrix},
+    transform::{viewport,barycentric,get_viewport_matrix},
     utils::degrees_to_radians,
+
 };
 
 #[derive(Debug, Clone)]
@@ -122,7 +123,7 @@ pub struct BasicShader<'a> {
     pub out_texture: &'a mut tga::Image,
     pub light_texture: &'a mut tga::Image,
     pub z_buffer: &'a mut tga::ZBuffer,
-
+    pub project_m: Matrix<4, 4>,
     pub varying_uv: Matrix<3, 2>,
     pub varying_xy: Matrix<3, 3>,
     pub vertices: [Vec3f; 3],
@@ -138,7 +139,7 @@ impl Shader for BasicShader<'_> {
             self.varying_uv[i][vertex] = t[i];
         }
 
-        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.width as f32/self.out_texture.height as f32,1f32,10f32);
+        let perspective_matrix = self.project_m;
 
         let viewport_matrix = get_viewport_matrix(self.out_texture.width, self.out_texture.height);
 
@@ -312,7 +313,7 @@ mod tests {
     fn test_matrixs(){
         let camera:Camera = Camera::new(Vec3f(0f32,0f32,50f32),Vec3f(0f32,0f32,0f32));
         let lookat_m = camera.get_lookat_view();
-        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),1f32,10f32,100f32);
+        // let perspective_matrix = _prespective_projection(degrees_to_radians(60f32),1f32,10f32,100f32);
         let mut viewport_matrix = get_viewport_matrix(512, 512);
         let model_view = lookat_m;
         // println!("{:?}",model_view);
@@ -320,8 +321,7 @@ mod tests {
         // println!("{:?}",perspective_matrix);
         
         let v = Vec3f(0f32,0f32,50f32);
-        let res:Vec3f = perspective_matrix
-                        .mul(&model_view)
+        let res:Vec3f = model_view
                         .mul(&v.embed::<4>(1f32))
                         .into();
         println!("{:?}",res);

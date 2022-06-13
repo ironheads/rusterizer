@@ -25,11 +25,35 @@ pub fn get_viewport_matrix(w:i32, h:i32) -> Matrix<4,4> {
     viewport
 }
 
-pub fn get_prespective_projection(fovy_in_radians:f32,aspect:f32, z_near:f32, z_far:f32) -> Matrix<4,4>{
+pub fn calculate_lookat_matrix(position: Vec3f, view : Vec3f, up_vector: Vec3f) -> Matrix<4,4> {
+    let z = position.sub(&view).normalize();
+    let x = up_vector.cross(&z).normalize();
+    let y = z.cross(&x).normalize();
+
+    let minv = [
+        [x.0, x.1, x.2, 0.0],
+        [y.0, y.1, y.2, 0.0],
+        [z.0, z.1, z.2, 0.0],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
+
+    let tr= [
+        [1.0, 0.0, 0.0, -position.0],
+        [0.0, 1.0, 0.0, -position.1],
+        [0.0, 0.0, 1.0, -position.2],
+        [0.0, 0.0, 0.0, 1.0],
+    ];
+
+    minv.mul(&tr) // 4x4
+}
+
+
+pub fn calculate_prespective_projection(fovy_in_radians:f32,aspect:f32, z_near:f32, z_far:f32, zoom: f32) -> Matrix<4,4>{
     let mut projection = Matrix::identity();
     let theta = fovy_in_radians/2f32;
-    projection[0][0] = 1.0/(aspect*theta.tan());
-    projection[1][1] = 1.0 / theta.tan();
+    let zoom_tan_theta = theta.tan() / zoom;
+    projection[0][0] = 1.0/(aspect*zoom_tan_theta);
+    projection[1][1] = 1.0 / zoom_tan_theta;
     projection[2][2] = (z_far+z_near)/(z_near-z_far);
 
     projection[2][3] = 2f32*z_far*z_near/(z_near-z_far);

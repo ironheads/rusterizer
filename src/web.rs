@@ -1,6 +1,6 @@
 use anyhow::Error;
 use wasm_bindgen::{Clamped, JsCast};
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData, MouseEvent, KeyboardEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData, MouseEvent, KeyboardEvent, WheelEvent};
 use yew::format::Nothing;
 use yew::services::fetch::{FetchTask, Request, Response, Uri};
 use yew::services::{ConsoleService, FetchService};
@@ -33,6 +33,7 @@ pub enum Msg {
     MoveStarted(i32, i32),
     MoveEnded,
     Noop,
+    Zoom(f32),
     ShiftCamera(camera::Direction),
 }
 
@@ -56,6 +57,7 @@ pub struct Model<T: CameraTrait> where Model<T>: yew::Component {
     camera: T,
     rotation_start: Option<(i32, i32, Vec3f)>,
     move_start: Option<(i32, i32, Vec3f)>,
+    zoom_start: Option<f32>,
 }
 
 impl<T> Model<T> where T:CameraTrait,Model<T>: yew::Component, <Model<T> as yew::Component>::Message: From<Msg>  {
@@ -194,6 +196,7 @@ impl Component for Model<PerspectiveCamera> {
             camera: PerspectiveCamera::new(50f32,WIDTH as f32/HEIGHT as f32,0.01f32,1000f32),
             rotation_start: None,
             move_start: None,
+            zoom_start: Some(1f32),
         }
     }
 
@@ -378,6 +381,14 @@ impl Component for Model<PerspectiveCamera> {
                 }
                 false
             }
+            Msg::Zoom(zoom) => {
+                self.zoom_start = Some(zoom);
+                self.camera.set_zoom(zoom);
+                if self.ready() {
+                    self.render();
+                }
+                true
+            }
         }
     }
 
@@ -385,6 +396,7 @@ impl Component for Model<PerspectiveCamera> {
         let Vec3f(x, y, z) = self.camera.position();
         let pos = self.rotation_start;
         let place = self.move_start;
+        let zoom = self.zoom_start;
         html! {
             <div class="rusterizer-window"
             tabindex="0"
@@ -392,23 +404,40 @@ impl Component for Model<PerspectiveCamera> {
                 e.prevent_default();
                 Msg::Noop
             })
-            onmousedown=self.link.callback(move |e: MouseEvent| {
-                // ConsoleService::log(format!("{:?}", e).as_str());
-                if e.button() == 0 {
-                    Msg::RotationStarted(e.client_x(), e.client_y())
+            onwheel = self.link.callback(move |e: WheelEvent| {
+                e.prevent_default();
+                let delta = e.delta_y() as f32;
+                if zoom.is_some() {
+                    let value = zoom.unwrap_or(1f32);
+                    if delta > 0.0 {
+                        Msg::Zoom(value*(1.0+delta/100.0))
+                    } else if delta < 0.0 {
+                        Msg::Zoom(value/(1.0-delta/100.0))
+                    } else {
+                        Msg::Noop
+                    }
                 } else {
-                    Msg::MoveStarted(e.client_x(), e.client_y())
+                    Msg::Zoom(1f32)
                 }
             })
-            onmouseup=self.link.callback(move |e: MouseEvent| {
-                if e.button() == 0 {
-                    Msg::RotationEnded
-                } else {
-                    Msg::MoveEnded
-                }
-            })
+            // onmousedown=self.link.callback(move |e: MouseEvent| {
+            //     // ConsoleService::log(format!("{:?}", e).as_str());
+            //     if e.button() == 0 {
+            //         Msg::RotationStarted(e.client_x(), e.client_y())
+            //     } else {
+            //         Msg::MoveStarted(e.client_x(), e.client_y())
+            //     }
+            // })
+            // onmouseup=self.link.callback(move |e: MouseEvent| {
+            //     if e.button() == 0 {
+            //         Msg::RotationEnded
+            //     } else {
+            //         Msg::MoveEnded
+            //     }
+            // })
             onkeypress=self.link.callback(move |e: KeyboardEvent| {
                 // ConsoleService::log(format!("{:?}", e).as_str());
+                e.prevent_default();
                 match e.code().as_str() {
                     "KeyW" => {
                         Msg::ShiftCamera(camera::Direction::FRONT)
@@ -427,22 +456,22 @@ impl Component for Model<PerspectiveCamera> {
                     }
                 }
             })
-            onmousemove=self.link.callback(move |e: MouseEvent| {
-                if pos.is_some(){
-                    pos.map(|(px, py, campos)| {
-                        let dx = px - e.client_x();
-                        let dy = py - e.client_y();
-                        Msg::Upd(campos.rotate(dy as f32/100.0, dx as f32/100.0))
-                    }).unwrap_or(Msg::Noop)
-                } else {
-                    place.map(|(px, py, old_place)| {
-                        let dx = px - e.client_x();
-                        let dy = py - e.client_y();
-                        Msg::UpdC(Vec3f(dx as f32, dy as f32, 0.0), old_place)
-                    }).unwrap_or(Msg::Noop)
-                }
-
-            })>
+            // onmousemove=self.link.callback(move |e: MouseEvent| {
+            //     if pos.is_some(){
+            //         pos.map(|(px, py, campos)| {
+            //             let dx = px - e.client_x();
+            //             let dy = py - e.client_y();
+            //             Msg::Upd(campos.rotate(dy as f32/100.0, dx as f32/100.0))
+            //         }).unwrap_or(Msg::Noop)
+            //     } else {
+            //         place.map(|(px, py, old_place)| {
+            //             let dx = px - e.client_x();
+            //             let dy = py - e.client_y();
+            //             Msg::UpdC(Vec3f(dx as f32, dy as f32, 0.0), old_place)
+            //         }).unwrap_or(Msg::Noop)
+            //     }
+            // })
+            >
                 <canvas
                 ref={self.node_ref.clone()} width=format!("{}", WIDTH) height=format!("{}", HEIGHT) />
                 <div class="menu">

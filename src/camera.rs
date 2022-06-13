@@ -91,7 +91,7 @@ impl Camera {
     }
 
     pub fn yaw_camera(&mut self, move_distance:f32) { 
-        let z = self.view.sub(&self.position);
+        let z = self.position.sub(&self.view);
         let x = z.cross(&self.up_vector).normalize();
         
         self.position = self.position.add(&x.mulf(move_distance));

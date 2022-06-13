@@ -25,14 +25,14 @@ pub fn get_viewport_matrix(w:i32, h:i32) -> Matrix<4,4> {
     viewport
 }
 
-pub fn get_prespective_projection(fovyInRadians:f32,aspect:f32, zNear:f32, zFar:f32) -> Matrix<4,4>{
+pub fn get_prespective_projection(fovy_in_radians:f32,aspect:f32, z_near:f32, z_far:f32) -> Matrix<4,4>{
     let mut projection = Matrix::identity();
-    let theta = fovyInRadians/2f32;
+    let theta = fovy_in_radians/2f32;
     projection[0][0] = 1.0/(aspect*theta.tan());
     projection[1][1] = 1.0 / theta.tan();
-    projection[2][2] = (zFar+zNear)/(zNear-zFar);
+    projection[2][2] = (z_far+z_near)/(z_near-z_far);
 
-    projection[2][3] = 2f32*zFar*zNear/(zNear-zFar);
+    projection[2][3] = 2f32*z_far*z_near/(z_near-z_far);
     projection[3][2] = -1f32;
     projection
     // Matrix::identity()

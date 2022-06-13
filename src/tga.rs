@@ -23,6 +23,48 @@ impl Color {
 #[derive(Clone, Debug)]
 pub struct ColorA(pub u8, pub u8, pub u8, pub u8);
 
+// the struct to save the z_depth value to test depth
+pub struct ZBuffer {
+    pub width: i32,
+    pub height: i32,
+    pub data: Vec<f32>, // values between 0 and 255,float
+}
+
+impl ZBuffer {
+    pub fn new(width: i32, height: i32) -> Self {
+        let v = vec![255f32; (width * height) as usize];
+        ZBuffer {
+            width: width,
+            height: height,
+            data: v,
+        }
+    }
+
+    pub fn pixel_at(&self, x: i32, y: i32) -> f32 {
+        *self.data
+            .get((x + y * self.width) as usize)
+            .unwrap_or(&255f32)
+    }
+
+    pub fn set_pixel(&mut self, x: i32, y: i32, v: f32) {
+        self.data[(x + y * self.width) as usize] = v;
+    }
+
+}
+
+impl Into<Image> for ZBuffer {
+    fn into(self) -> Image {
+        let mut img = Image::new(self.width,self.height);
+        for i in 0..self.width {
+            for j in 0..self.height {
+                let c = 255 - self.pixel_at(i, j).round() as u8;
+                img.set_pixel(i,j,Color(c,c,c));
+            }
+        }
+        img
+    }
+}
+
 pub struct Image {
     pub width: i32,
     pub height: i32,

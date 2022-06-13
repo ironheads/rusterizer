@@ -40,7 +40,7 @@ pub struct LightShader<'a> {
     pub out_texture: &'a mut tga::Image,
     pub light_texture: &'a mut tga::Image,
     pub occl_texture: &'a mut tga::Image,
-    pub z_buffer: &'a mut tga::Image,
+    pub z_buffer: &'a mut tga::ZBuffer,
     pub varying_uv: Matrix<3, 2>,
     pub varying_xy: Matrix<3, 3>,
 }
@@ -75,15 +75,14 @@ impl Shader for LightShader<'_> {
         let [[x], [y], [z]] = self.varying_xy.mul(&bar_mtrx);
         let x = x.round() as i32;
         let y = y.round() as i32;
-        let z = z.round();
-
-        let current_z = self.z_buffer.pixel_at(x, y).0 as f32 / 255.0;
+        
+        let current_z = self.z_buffer.pixel_at(x, y) / 255.0;
         // let [[u],[v]] = self.varying_uv.mul(&bar_mtrx);
         let mut total = 0.0;
         // hacky screen space ambient occlusion
         for yy in (y - 5).max(0)..(y + 5).min(self.out_texture.height) {
             for xx in (x - 5).max(0)..(x + 5).min(self.out_texture.width) {
-                let surr_z = self.z_buffer.pixel_at(xx, yy).0 as f32 / 255.0;
+                let surr_z = self.z_buffer.pixel_at(xx, yy) / 255.0;
                 if current_z <= 0.01 {
                     continue;
                 }
@@ -122,7 +121,7 @@ pub struct BasicShader<'a> {
     pub model: &'a Model,
     pub out_texture: &'a mut tga::Image,
     pub light_texture: &'a mut tga::Image,
-    pub z_buffer: &'a mut tga::Image,
+    pub z_buffer: &'a mut tga::ZBuffer,
 
     pub varying_uv: Matrix<3, 2>,
     pub varying_xy: Matrix<3, 3>,
@@ -139,7 +138,7 @@ impl Shader for BasicShader<'_> {
             self.varying_uv[i][vertex] = t[i];
         }
 
-        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.width as f32/self.out_texture.height as f32,0.01,1000f32);
+        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),self.out_texture.width as f32/self.out_texture.height as f32,1f32,10f32);
 
         let viewport_matrix = get_viewport_matrix(self.out_texture.width, self.out_texture.height);
 
@@ -179,12 +178,15 @@ impl Shader for BasicShader<'_> {
         let [[x], [y], [z]] = self.varying_xy.mul(&bar_mtrx);
         let x = x.round() as i32;
         let y = y.round() as i32;
-        let z = z.round() as u8;
-        if z <= self.z_buffer.pixel_at(x, y).0
+
+        // todo!("")
+        // 非线形插值的坐标
+        if z >= self.z_buffer.pixel_at(x, y)
             || x < 0
             || x >= self.out_texture.width
             || y < 0
             || y >= self.out_texture.height
+            || z < 0.0
         {
             return;
         }
@@ -227,7 +229,7 @@ impl Shader for BasicShader<'_> {
                 txt.highlight(highlight)
             },
         );
-        self.z_buffer.set_pixel(x, y, tga::Color(z, z, z))
+        self.z_buffer.set_pixel(x, y, z)
     }
 }
 
@@ -308,26 +310,22 @@ mod tests {
 
     #[test]
     fn test_matrixs(){
-        let camera:Camera = Camera { position: Vec3f(100f32,100f32,100f32), look_at: Vec3f(0f32,0f32,0f32) };
+        let camera:Camera = Camera::new(Vec3f(0f32,0f32,50f32),Vec3f(0f32,0f32,0f32));
         let lookat_m = camera.get_lookat_view();
-        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),1f32,0.1,5f32);
+        let perspective_matrix = get_prespective_projection(degrees_to_radians(60f32),1f32,10f32,100f32);
         let mut viewport_matrix = get_viewport_matrix(512, 512);
         let model_view = lookat_m;
-        println!("{:?}",model_view);
-        println!("{:?}",viewport_matrix);
-        println!("{:?}",perspective_matrix);
-        for i in [-1f32,1f32] {
-            for j in [-1f32,1f32] {
-                for k in [-1f32,1f32] {
-                    let v = Vec3f(i,j,k);
-                    let res:Vec3f = model_view
-                                    .mul(&v.embed::<4>(1f32))
-                                    .into();
-                    println!("{:?}",res);
-                }   
-            }
-        }
+        // println!("{:?}",model_view);
+        // println!("{:?}",viewport_matrix);
+        // println!("{:?}",perspective_matrix);
         
+        let v = Vec3f(0f32,0f32,50f32);
+        let res:Vec3f = perspective_matrix
+                        .mul(&model_view)
+                        .mul(&v.embed::<4>(1f32))
+                        .into();
+        println!("{:?}",res);
+                
     }
 
 }

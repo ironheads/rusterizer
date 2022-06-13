@@ -1,7 +1,7 @@
 #![feature(generic_const_exprs)]
-#[cfg(not(feature = "local"))]
+#[cfg(not(feature = "raytracing"))]
 extern crate anyhow;
-#[cfg(not(feature = "local"))]
+#[cfg(not(feature = "raytracing"))]
 extern crate yew;
 
 mod la;
@@ -11,11 +11,12 @@ mod tga;
 mod camera;
 mod transform;
 mod utils;
-#[cfg(not(feature = "local"))]
+mod ray;
+#[cfg(not(feature = "raytracing"))]
 mod web;
 
 
-#[cfg(feature = "local")]
+#[cfg(feature = "raytracing")]
 use crate::{
     la::{get_look_at, look_at, Matrix, MatrixI, Vec3f},
     model::Model,

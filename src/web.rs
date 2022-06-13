@@ -1,6 +1,6 @@
 use anyhow::Error;
 use wasm_bindgen::{Clamped, JsCast};
-use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData, MouseEvent};
+use web_sys::{CanvasRenderingContext2d, HtmlCanvasElement, ImageData, MouseEvent, KeyboardEvent};
 use yew::format::Nothing;
 use yew::services::fetch::{FetchTask, Request, Response, Uri};
 use yew::services::{ConsoleService, FetchService};
@@ -9,8 +9,9 @@ use yew::{html, Component, Html, NodeRef};
 use crate::la::{Matrix, MatrixI, Vec3f};
 use crate::model::{self, Wavefront};
 use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
-use crate::tga::Image;
-use crate::camera::Camera;
+use crate::tga::{Image,ZBuffer};
+use crate::camera::{Camera, self};
+
 // use crate::transform::{get_prespective_projection};
 const WIDTH:u32 = 860;
 const HEIGHT:u32 = 512;
@@ -32,6 +33,7 @@ pub enum Msg {
     MoveStarted(i32, i32),
     MoveEnded,
     Noop,
+    ShiftCamera(camera::Direction),
 }
 
 pub enum ModelType {
@@ -61,7 +63,7 @@ impl Model {
         let width: i32 = WIDTH as i32;
         let height: i32 = HEIGHT as i32;
         let mut out_texture = Image::new(width, height);
-        let mut z_buffer = Image::new(width, height);
+        let mut z_buffer = ZBuffer::new(width, height);
         let mut light_texture = Image::new(width, height);
 
         let camera = &self.camera;
@@ -128,7 +130,7 @@ impl Model {
             .unwrap()
             .dyn_into()
             .unwrap();
-        let img = if self.zbuff { z_buffer } else { out_texture }.get_raw_bytes();
+        let img = if self.zbuff { z_buffer.into() } else { out_texture }.get_raw_bytes();
         let id = ImageData::new_with_u8_clamped_array_and_sh(Clamped(&img[..]),WIDTH,HEIGHT).unwrap();
         ctx.put_image_data(&id, 0.0, 0.0).unwrap();
     }
@@ -302,7 +304,7 @@ impl Component for Model {
                 true
             }
             Msg::MoveStarted(x, y) => {
-                self.move_start = Some((x, y, self.camera.look_at));
+                self.move_start = Some((x, y, self.camera.view));
                 true
             }
             Msg::MoveEnded => {
@@ -319,8 +321,16 @@ impl Component for Model {
                     .normalize()
                     .mulf(dx / 500.0);
 
-                self.camera.look_at = old_place.add(&perp).add(&camvec);
+                self.camera.view = old_place.add(&perp).add(&camvec);
 
+                if self.ready() {
+                    self.render();
+                }
+                true
+            }
+            Msg::ShiftCamera(direction) => {
+                // ConsoleService::log(format!("{:?}", direction).as_str());
+                self.camera.shift_camera(direction);
                 if self.ready() {
                     self.render();
                 }
@@ -376,11 +386,13 @@ impl Component for Model {
         let place = self.move_start;
         html! {
             <div class="rusterizer-window"
+            tabindex="0"
             oncontextmenu=self.link.callback(move |e: MouseEvent| {
                 e.prevent_default();
                 Msg::Noop
             })
             onmousedown=self.link.callback(move |e: MouseEvent| {
+                // ConsoleService::log(format!("{:?}", e).as_str());
                 if e.button() == 0 {
                     Msg::RotationStarted(e.client_x(), e.client_y())
                 } else {
@@ -392,6 +404,26 @@ impl Component for Model {
                     Msg::RotationEnded
                 } else {
                     Msg::MoveEnded
+                }
+            })
+            onkeypress=self.link.callback(move |e: KeyboardEvent| {
+                // ConsoleService::log(format!("{:?}", e).as_str());
+                match e.code().as_str() {
+                    "KeyW" => {
+                        Msg::ShiftCamera(camera::Direction::FRONT)
+                    },
+                    "KeyS" => {
+                        Msg::ShiftCamera(camera::Direction::BACK)
+                    },
+                    "KeyA" => {
+                        Msg::ShiftCamera(camera::Direction::LEFT)
+                    },
+                    "KeyD" => {
+                        Msg::ShiftCamera(camera::Direction::RIGHT)
+                    },
+                    &_ => {
+                        Msg::Noop
+                    }
                 }
             })
             onmousemove=self.link.callback(move |e: MouseEvent| {
@@ -445,6 +477,7 @@ impl Component for Model {
             </div>
         }
     }
+
 }
 
 pub fn web() {

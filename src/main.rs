@@ -14,6 +14,7 @@ mod utils;
 mod ray;
 mod materials;
 mod hit;
+mod objects;
 #[cfg(not(feature = "raytracing"))]
 mod web;
 

@@ -1,5 +1,6 @@
-use std::ops::Neg;
-
+use std::ops::{Neg, Add, Sub, Mul, Div};
+use rand::distributions::{Distribution, Standard};
+use rand::{random, Rng};
 
 
 #[derive(Clone, Debug, Copy)]
@@ -19,9 +20,80 @@ impl Neg for Vec3f {
     }
 }
 
+impl Add<Vec3f> for Vec3f {
+    type Output = Self;
+
+    fn add(self, rhs: Vec3f) -> Self::Output {
+        Vec3f(self.0+rhs.0,self.1+rhs.1,self.2+rhs.2)
+    }
+}
+
+impl Sub<Vec3f> for Vec3f {
+    type Output = Self;
+    fn sub(self, rhs: Vec3f) -> Self::Output {
+        Vec3f(self.0-rhs.0,self.1-rhs.1,self.2-rhs.2)
+    }
+}
+
+impl Mul<Vec3f> for Vec3f {
+    type Output = Self;
+    fn mul(self, rhs: Vec3f) -> Self::Output {
+        Vec3f(self.0*rhs.0,self.1*rhs.1,self.2*rhs.2)
+    }
+}
+
+impl Mul<f32> for Vec3f {
+    type Output = Self;
+    fn mul(self, rhs: f32) -> Self::Output {
+        Vec3f(self.0 * rhs, self.1 * rhs, self.2 *rhs)
+    }
+}
+
+impl Mul<Vec3f> for f32 {
+    type Output = Vec3f;
+    fn mul(self, rhs: Vec3f) -> Self::Output {
+        rhs*self
+    }
+}
+
+impl Div<f32> for Vec3f {
+    type Output = Self;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Vec3f(self.0/rhs,self.1/rhs,self.2/rhs)
+    }
+}
+
+// generate the standard distribution of vec3f
+impl Distribution<Vec3f> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> Vec3f {
+        Vec3f(rng.gen(), rng.gen(), rng.gen())
+    }
+}
+
+
 impl Vec3f {
     pub fn zeroed() -> Self {
         Vec3f(0.0, 0.0, 0.0)
+    }
+
+    pub fn reflect(v: &Vec3f, n: &Vec3f) -> Vec3f {
+        v.sub(&v.dot(n).mul(*n).mulf(2f32))
+    }
+
+    // refract 
+    pub fn refract(v: &Vec3f, n: &Vec3f, etai_over_etat: f32) -> Vec3f {
+        let cos_theta = f32::min(v.mulf(-1f32).dot(n), 1.0);
+        let r_out_perp = etai_over_etat * (*v + cos_theta * (*n));
+        let r_out_parallel = libm::fabsf(1.0 - r_out_perp.length_squared()).sqrt() * -1.0 * *n;
+        r_out_perp + r_out_parallel
+    }
+
+    pub fn other_refract(uv: Vec3f, n: Vec3f, etai_over_etat: f32) -> Vec3f {
+        let cos_theta = (-uv).dot(&n);
+        let r_out_parallel = etai_over_etat * (uv + cos_theta * n);
+        let r_out_perp = -(1.0 - r_out_parallel.length_squared()).sqrt() * n;
+        r_out_parallel + r_out_perp
     }
 
     pub fn embed<const L: usize>(&self, i: f32) -> Matrix<1, L> {
@@ -31,6 +103,37 @@ impl Vec3f {
         v[1][0] = self.1;
         v[2][0] = self.2;
         v
+    }
+
+    pub fn length_squared(&self) -> f32 {
+        self.dot(&self)
+    }
+
+    pub fn length(&self) -> f32 {
+        self.dot(&self).sqrt()
+    }
+
+    pub fn random_in_unit_sphere() -> Vec3f {
+        loop {
+            let p = 2.0 * random::<Vec3f>() - Vec3f(1.0, 1.0, 1.0);
+            if p.length_squared() < 1.0 {
+                return p;
+            }
+        }
+    }
+
+    pub fn random_unit_vector() -> Vec3f {
+        loop {
+            let u = 2.0 * random::<f32>() - 1.0;
+            let v = 2.0 * random::<f32>() - 1.0;
+            let r2 = u*u+v*v;
+            if r2 < 1.0 {
+                let x = 2.0 * u * (1.0 - r2).sqrt();
+			    let y = 2.0 * v * (1.0 - r2).sqrt();
+			    let z = 1.0 - 2.0 * r2;
+                return Vec3f(x,y,z);
+            }
+        }
     }
 
 
@@ -53,7 +156,7 @@ impl Vec3f {
     }
 
     pub fn normalize(&self) -> Self {
-        let mag = (self.0 * self.0 + self.1 * self.1 + self.2 * self.2).sqrt();
+        let mag = self.length();
         let mag = if mag == 0.0 { f32::MIN } else { mag };
         Vec3f(self.0 / mag, self.1 / mag, self.2 / mag)
     }
@@ -247,6 +350,11 @@ pub fn interpolatev(a: &Vec3f, b: &Vec3f, t: f32) -> Vec3f {
 mod tests {
     use super::*;
 
+    #[test]
+    fn test_vec3f() {
+        let vec = Vec3f(2.0,2.0,2.0);
+        println!("{:?}",vec.length_squared());
+    }
     // #[test]
     // fn test_time() {
     //     let mut acc = 0.0;

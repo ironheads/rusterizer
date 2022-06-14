@@ -1,3 +1,5 @@
+use std::char::ParseCharError;
+
 use crate::{
     la::Vec3f,
     la::Matrix,
@@ -11,11 +13,13 @@ pub trait CameraTrait {
     fn get_speed(&self) -> f32;
     fn get_up_vector(&self) -> Vec3f;
     fn get_zoom(&self) -> f32;
+    fn get_aspect(&self) -> f32;
     fn set_position(&mut self, pos: Vec3f);
     fn set_up_vector(&mut self, v:Vec3f);
     fn set_speed(&mut self, speed:f32);
     fn set_focus(&mut self, focus:Vec3f);
     fn set_zoom(&mut self, zoom:f32);
+    fn set_aspect(&mut self, aspect: f32);
     fn get_lookat(&self) -> &Matrix<4,4>;
     fn get_projection(&self) -> &Matrix<4,4>;
     fn shift_camera(&mut self,direction:Direction);
@@ -240,5 +244,91 @@ impl CameraTrait for PerspectiveCamera {
         self.camera.shift_camera(direction)
     }
 
+    fn get_aspect(&self) -> f32 {
+        self.aspect
+    }
+
+    fn set_aspect(&mut self, aspect: f32) {
+        self.aspect = aspect;
+        self.update_projection();
+    }
+
 }
 
+
+pub struct RayCamera {
+    
+    camera: Camera,
+
+    fov: f32,
+
+    aspect: f32,
+
+
+}
+
+impl CameraTrait for RayCamera {
+    fn position(&self) -> Vec3f {
+        self.camera.position
+    }
+
+    fn get_focus(&self) -> Vec3f {
+        self.camera.view
+    }
+
+    fn get_speed(&self) -> f32 {
+        self.camera.speed
+    }
+
+    fn get_up_vector(&self) -> Vec3f {
+        self.camera.up_vector
+    }
+
+    fn get_zoom(&self) -> f32 {
+        panic!("ray tracing camera do not support zoom")
+    }
+
+    fn set_position(&mut self, pos: Vec3f) {
+        self.camera.set_position(pos);
+    }
+
+    fn set_up_vector(&mut self, v:Vec3f) {
+        self.camera.set_up_vector(v);
+    }
+
+    fn set_speed(&mut self, speed:f32) {
+        self.camera.set_speed(speed);
+    }
+
+    fn set_focus(&mut self, focus:Vec3f) {
+        self.camera.set_focus(focus);
+    }
+
+    fn set_zoom(&mut self, zoom:f32) {
+        todo!("ray tracing camera do not supprot zoom")
+    }
+
+    fn get_lookat(&self) -> &Matrix<4,4> {
+        self.camera.get_lookat_view()
+    }
+
+    fn get_projection(&self) -> &Matrix<4,4> {
+        panic!("the ray tracing camera do not need the projection matrix");
+    }
+
+    fn shift_camera(&mut self,direction:Direction) {
+        self.camera.shift_camera(direction);
+    }
+
+    fn update_projection(&mut self) {
+        // panic!("ray tracing camera do not support project");
+    }
+
+    fn get_aspect(&self) -> f32 {
+        self.aspect
+    }
+
+    fn set_aspect(&mut self, aspect: f32) {
+        self.aspect = aspect;
+    }
+}

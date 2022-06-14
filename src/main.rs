@@ -12,6 +12,8 @@ mod camera;
 mod transform;
 mod utils;
 mod ray;
+mod materials;
+mod hit;
 #[cfg(not(feature = "raytracing"))]
 mod web;
 
@@ -23,6 +25,7 @@ use crate::{
     shader::{triangle, BasicShader, Shader, ShaderConf},
     tga::Image,
 };
+
 #[cfg(not(feature = "raytracing"))]
 use web::web;
 

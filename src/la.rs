@@ -1,5 +1,23 @@
+use std::ops::Neg;
+
+
+
 #[derive(Clone, Debug, Copy)]
 pub struct Vec3f(pub f32, pub f32, pub f32);
+
+impl Default for Vec3f {
+    fn default() -> Self {
+        Self(Default::default(), Default::default(), Default::default())
+    }
+}
+
+impl Neg for Vec3f {
+    type Output = Self;
+
+    fn neg(self) -> Self::Output {
+        Vec3f(-self.0,-self.1,-self.2)
+    }
+}
 
 impl Vec3f {
     pub fn zeroed() -> Self {
@@ -52,6 +70,10 @@ impl Vec3f {
         self.0 * v.0 + self.1 * v.1 + self.2 * v.2
     }
 
+    pub fn dot(&self, v: &Vec3f) ->f32 {
+        self.mul(v)
+    }
+
     pub fn mulf(&self, v: f32) -> Vec3f {
         Vec3f(self.0 * v, self.1 * v, self.2 * v)
     }
@@ -70,6 +92,12 @@ impl Vec3f {
         ];
 
         ym.mul(&xm.mul(&self.into())).into()
+    }
+
+    /// Return true if the vector is close to zero in all dimensions.
+    pub fn near_zero(&self) -> bool {
+        let s: f32 = 1e-8;
+        (libm::fabsf(self.0) < s) && (libm::fabsf(self.1) < s) && (libm::fabsf(self.2) < s)
     }
 }
 

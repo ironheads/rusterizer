@@ -67,7 +67,7 @@ impl Camera {
     }
     
     fn set_focus(&mut self, v: Vec3f) {
-        self.position=v;
+        self.view=v;
         self.update_lookat_matrix();
     }
 

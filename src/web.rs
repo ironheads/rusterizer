@@ -19,9 +19,10 @@ pub enum Msg {
     Texture(Vec<u8>),
     Model(Vec<u8>),
     Normals(Vec<u8>),
-    Upd(Vec3f),
+    Upd((f32,f32,Vec3f)),
     UpdC(Vec3f, Vec3f),
     Load(ModelType),
+    MoveCamera(Vec3f),
     Diff,
     Spec,
     Txt,
@@ -267,7 +268,9 @@ impl Component for Model<PerspectiveCamera> {
                 }
                 true
             }
-            Msg::Upd(v) => {
+            Msg::Upd((dx,dy,pos)) => {
+                let focus = self.camera.get_focus();
+                let v = focus.add(&pos.sub(&focus).rotate(dx, dy));
                 self.camera.set_position(v);
                 if self.ready() {
                     self.render();
@@ -316,12 +319,14 @@ impl Component for Model<PerspectiveCamera> {
                 true
             }
             Msg::UpdC(Vec3f(dx, dy, _), old_place) => {
-                ConsoleService::log(format!("{:?}, {:?}", dx, dy).as_str());
-                let camvec = Vec3f(self.camera.position().0, 0.0, self.camera.position().2)
+                // ConsoleService::log(format!("{:?}, {:?}", dx, dy).as_str());
+                let z = self.camera.position().sub(&old_place);
+                // ConsoleService::log(format!("{:?}", z).as_str());
+                let camvec = Vec3f(z.0, 0f32, z.2)
                     .normalize()
                     .mulf(dy / 500.0);
-                let perp: Vec3f = Vec3f(0.0, 1.0, 0.0)
-                    .cross(&self.camera.position())
+                let perp: Vec3f = self.camera.get_up_vector()
+                    .cross(&z)
                     .normalize()
                     .mulf(dx / 500.0);
 
@@ -389,11 +394,19 @@ impl Component for Model<PerspectiveCamera> {
                 }
                 true
             }
+            Msg::MoveCamera(pos) => {
+                self.camera.set_position(pos);
+                if self.ready() {
+                    self.render();
+                }
+                true
+            }
         }
     }
 
     fn view(&self) -> Html {
         let Vec3f(x, y, z) = self.camera.position();
+        // let zoom = self.camera.get_zoom();
         let pos = self.rotation_start;
         let place = self.move_start;
         let zoom = self.zoom_start;
@@ -420,21 +433,21 @@ impl Component for Model<PerspectiveCamera> {
                     Msg::Zoom(1f32)
                 }
             })
-            // onmousedown=self.link.callback(move |e: MouseEvent| {
-            //     // ConsoleService::log(format!("{:?}", e).as_str());
-            //     if e.button() == 0 {
-            //         Msg::RotationStarted(e.client_x(), e.client_y())
-            //     } else {
-            //         Msg::MoveStarted(e.client_x(), e.client_y())
-            //     }
-            // })
-            // onmouseup=self.link.callback(move |e: MouseEvent| {
-            //     if e.button() == 0 {
-            //         Msg::RotationEnded
-            //     } else {
-            //         Msg::MoveEnded
-            //     }
-            // })
+            onmousedown=self.link.callback(move |e: MouseEvent| {
+                // ConsoleService::log(format!("{:?}", e).as_str());
+                if e.button() == 0 {
+                    Msg::RotationStarted(e.client_x(), e.client_y())
+                } else {
+                    Msg::MoveStarted(e.client_x(), e.client_y())
+                }
+            })
+            onmouseup=self.link.callback(move |e: MouseEvent| {
+                if e.button() == 0 {
+                    Msg::RotationEnded
+                } else {
+                    Msg::MoveEnded
+                }
+            })
             onkeypress=self.link.callback(move |e: KeyboardEvent| {
                 // ConsoleService::log(format!("{:?}", e).as_str());
                 e.prevent_default();
@@ -456,21 +469,21 @@ impl Component for Model<PerspectiveCamera> {
                     }
                 }
             })
-            // onmousemove=self.link.callback(move |e: MouseEvent| {
-            //     if pos.is_some(){
-            //         pos.map(|(px, py, campos)| {
-            //             let dx = px - e.client_x();
-            //             let dy = py - e.client_y();
-            //             Msg::Upd(campos.rotate(dy as f32/100.0, dx as f32/100.0))
-            //         }).unwrap_or(Msg::Noop)
-            //     } else {
-            //         place.map(|(px, py, old_place)| {
-            //             let dx = px - e.client_x();
-            //             let dy = py - e.client_y();
-            //             Msg::UpdC(Vec3f(dx as f32, dy as f32, 0.0), old_place)
-            //         }).unwrap_or(Msg::Noop)
-            //     }
-            // })
+            onmousemove=self.link.callback(move |e: MouseEvent| {
+                if pos.is_some(){
+                    pos.map(|(px, py, campos)| {
+                        let dx = px - e.client_x();
+                        let dy = py - e.client_y();
+                        Msg::Upd((dy as f32/100.0, dx as f32/100.0,campos))
+                    }).unwrap_or(Msg::Noop)
+                } else {
+                    place.map(|(px, py, old_place)| {
+                        let dx = px - e.client_x();
+                        let dy = py - e.client_y();
+                        Msg::UpdC(Vec3f(dx as f32, dy as f32, 0.0), old_place)
+                    }).unwrap_or(Msg::Noop)
+                }
+            })
             >
                 <canvas
                 ref={self.node_ref.clone()} width=format!("{}", WIDTH) height=format!("{}", HEIGHT) />
@@ -478,19 +491,24 @@ impl Component for Model<PerspectiveCamera> {
                     { if self.ready() { html! {
                         <>
                             <div class="button-row">
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x+0.1, y, z)))>{ "+" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x+0.1, y, z)))>{ "+" }</button>
                                 { "x: " }{ format!("{:.2}", x) }
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x-0.1, y, z)))>{ "-" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x-0.1, y, z)))>{ "-" }</button>
                             </div>
                             <div class="button-row">
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x, y+0.1, z)))>{ "+" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x, y+0.1, z)))>{ "+" }</button>
                                 { "y: " }{ format!("{:.2}", y) }
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x, y-0.1, z)))>{ "-" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x, y-0.1, z)))>{ "-" }</button>
                             </div>
                             <div class="button-row">
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x, y, z+0.1)))>{ "+" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x, y, z+0.1)))>{ "+" }</button>
                                 { "z: " }{ format!("{:.2}", z) }
-                                <button onclick=self.link.callback(move |_| Msg::Upd(Vec3f(x, y, z-0.1)))>{ "-" }</button>
+                                <button onclick=self.link.callback(move |_| Msg::MoveCamera(Vec3f(x, y, z-0.1)))>{ "-" }</button>
+                            </div>
+                            <div class="button-row">
+                                <button onclick=self.link.callback(move |_| Msg::Zoom(zoom.unwrap_or(1f32)*1.5))>{ "+" }</button>
+                                { "zoom: " }{ format!("{:.2}", zoom.unwrap_or(1f32)) }
+                                <button onclick=self.link.callback(move |_| Msg::Zoom(zoom.unwrap_or(1f32)/1.5))>{ "-" }</button>
                             </div>
                             <button class=if self.conf.diff_light { "" } else { "off" } disabled={ self.zbuff } onclick=self.link.callback(move |_| Msg::Diff)>{ "Diffuse light" }</button>
                             <button class=if self.conf.spec_light { "" } else { "off" } disabled={ self.zbuff } onclick=self.link.callback(move |_| Msg::Spec)>{ "Specular light" }</button>

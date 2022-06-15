@@ -20,12 +20,16 @@ mod web;
 
 
 #[cfg(feature = "raytracing")]
-use crate::{
-    la::{get_look_at, look_at, Matrix, MatrixI, Vec3f},
-    model::Model,
-    shader::{triangle, BasicShader, Shader, ShaderConf},
-    tga::Image,
-};
+use ray::Ray;
+use hit::{Hit,Hittable,HittableList};
+use utils::{random_scene,ray_color};
+use la::Vec3f;
+use camera::{CameraTrait,ExposureCamera,Exposure};
+use indicatif::ProgressBar;
+use lodepng::RGB;
+use rayon::iter::IntoParallelIterator;
+use rayon::prelude::*;
+use std::path::Path;
 
 #[cfg(not(feature = "raytracing"))]
 use web::web;
@@ -35,78 +39,59 @@ fn main() {
     web();
 }
 
-#[cfg(feature = "local")]
+#[cfg(feature = "raytracing")]
+
 fn main() {
-    use model::{Model, Wavefront};
-    use shader::LightShader;
+    use rand::Rng;
 
-    let width: i32 = 1000;
-    let height: i32 = 1000;
-    let mut out_texture = tga::Image::new(width, height);
-    let mut z_buffer = tga::Image::new(width, height);
-    let mut light_texture = tga::Image::new(width, height);
 
-    let wavefront = Wavefront::parse_file("./res/african_head/model.obj".to_string());
-    let model_texture = tga::Image::from_file("./res/african_head/texture.tga".to_string());
-    let model_normals = tga::Image::from_file("./res/african_head/normals.tga".to_string());
+    const WIDTH: usize = 1200;
+    const HEIGHT: usize = 800;
+    const ASPECT: f32 = WIDTH as f32/ HEIGHT as f32;
+    const SAMPLES_PER_PIXEL: usize = 500;
+    const MAX_DEPTH: usize = 50;
+    // World
+    let world = random_scene();
+    let mut camera = ExposureCamera::default();
+    let position = Vec3f(13.0, 2.0, 3.0);
+    let view = Vec3f(0.0,0.0,0.0);
+    let aperture = 0.1;
+    camera.set_aspect(ASPECT);
+    camera.set_aperture(aperture);
+    camera.set_focus(view);
+    camera.set_position(position);
 
-    let model = Model::new(wavefront, model_normals, model_texture);
+    // Progress bar
+    let bar = ProgressBar::new(HEIGHT as u64);
 
-    let camvec = Vec3f(0.5, 0.5, 1.0);
-    let cam_lookat = Vec3f(0.0, 0.0, 0.0);
-    let lookat_m = get_look_at(&camvec, &cam_lookat);
-    let lookat_mi = lookat_m.inverse().transpose();
-    let light_dir: Vec3f = look_at(&lookat_m, &Vec3f(1.0, -0.0, 0.5).normalize()).normalize();
-
-    // println!("{:?}", lookat.mul(&lookat_i));
-    let mut shader = BasicShader {
-        conf: ShaderConf::new(),
-        light_dir,
-        lookat_m,
-        lookat_mi,
-        model: &model,
-        out_texture: &mut out_texture,
-        z_buffer: &mut z_buffer,
-        light_texture: &mut light_texture,
-        varying_uv: Matrix::zeroed(),
-        varying_xy: Matrix::zeroed(),
-        vertices: [Vec3f::zeroed(); 3],
-        normal_face_vec: None,
-    };
-
-    for f in 0..model.num_faces() {
-        let mut vertices = [Vec3f::zeroed(), Vec3f::zeroed(), Vec3f::zeroed()];
-        for v in 0..3 {
-            vertices[v] = shader.vertex(f, v);
+    // Render
+    let white = (256.0 * f32::clamp(1.0, 0.0, 0.999)) as u8;
+    let mut pixels: Vec<RGB<u8>> = vec![RGB::new(white, white, white); WIDTH * HEIGHT];
+    let bands: Vec<(usize, &mut [RGB<u8>])> = pixels.chunks_mut(WIDTH).enumerate().collect();
+    bands.into_par_iter().for_each(|(row, band)| {
+        let height = HEIGHT - row;
+        let mut rng = rand::thread_rng();
+        for column in 0..WIDTH {
+            let mut pixel_color = Vec3f(0.0, 0.0, 0.0);
+            for _s in 0..SAMPLES_PER_PIXEL {
+                let u: f32 = (column as f32 + rng.gen_range(0.0..1.0)) / (WIDTH - 1) as f32;
+                let v: f32 = (height as f32 + rng.gen_range(0.0..1.0)) / (HEIGHT - 1) as f32;
+                let r = camera.exposure_ray(u, v);
+                pixel_color = pixel_color + ray_color(&r, &world, MAX_DEPTH);
+            }
+            let pixel = pixel_color.to_rgb_sampled(SAMPLES_PER_PIXEL);
+            band[column] = pixel;
         }
-        triangle(&vertices[0], &vertices[1], &vertices[2], &mut shader);
+        bar.inc(1);
+    });
+
+    bar.finish();
+
+    let path = &Path::new("image.png");
+
+    if let Err(e) = lodepng::encode_file(path, &pixels, WIDTH, HEIGHT, lodepng::ColorType::RGB, 8) {
+        panic!("failed to write png: {:?}", e);
     }
 
-    let light_model = Model::screen_texture_model(); 
-
-    let mut occl_texture = Image::new(width, height);
-    let mut light_shader = LightShader {
-        conf: ShaderConf::new(),
-        model: &light_model,
-        out_texture: &mut out_texture,
-        light_texture: &mut light_texture,
-        z_buffer: &mut z_buffer,
-        varying_uv: Matrix::zeroed(),
-        varying_xy: Matrix::zeroed(),
-        occl_texture: &mut occl_texture,
-    };
-
-    for f in 0..light_model.num_faces() {
-        let mut vertices = [Vec3f::zeroed(), Vec3f::zeroed(), Vec3f::zeroed()];
-        for v in 0..3 {
-            vertices[v] = light_shader.vertex(f, v);
-        }
-        triangle(&vertices[0], &vertices[1], &vertices[2], &mut light_shader);
-    }
-
-    out_texture.apply_gamma(1.5);
-    out_texture.write_to_tga("african_head.tga").unwrap();
-    z_buffer.write_to_tga("zbuff.tga").unwrap();
-    light_texture.write_to_tga("light.tga").unwrap();
-    occl_texture.write_to_tga("occl.tga").unwrap();
+    println!("Written to {}", path.display());
 }

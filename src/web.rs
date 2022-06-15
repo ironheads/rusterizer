@@ -10,7 +10,7 @@ use crate::la::{Matrix, MatrixI, Vec3f};
 use crate::model::{self, Wavefront};
 use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
 use crate::tga::{Image,ZBuffer};
-use crate::camera::{self, CameraTrait, PerspectiveCamera};
+use crate::camera::{self, CameraTrait, PerspectiveCamera, Projectable};
 
 // use crate::transform::{get_prespective_projection};
 const WIDTH:u32 = 860;
@@ -43,7 +43,7 @@ pub enum ModelType {
     AFRICAN,
 }
 
-pub struct Model<T: CameraTrait> where Model<T>: yew::Component {
+pub struct Model<T: CameraTrait + Projectable> where Model<T>: yew::Component {
     conf: ShaderConf,
     zbuff: bool,
     node_ref: NodeRef,
@@ -61,7 +61,7 @@ pub struct Model<T: CameraTrait> where Model<T>: yew::Component {
     zoom_start: Option<f32>,
 }
 
-impl<T> Model<T> where T:CameraTrait,Model<T>: yew::Component, <Model<T> as yew::Component>::Message: From<Msg>  {
+impl<T> Model<T> where T:CameraTrait + Projectable,Model<T>: yew::Component, <Model<T> as yew::Component>::Message: From<Msg>  {
     fn render(&mut self) {
         let width: i32 = WIDTH as i32;
         let height: i32 = HEIGHT as i32;
@@ -269,7 +269,7 @@ impl Component for Model<PerspectiveCamera> {
                 true
             }
             Msg::Upd((dx,dy,pos)) => {
-                let focus = self.camera.get_focus();
+                let focus = self.camera.focus();
                 let v = focus.add(&pos.sub(&focus).rotate(dx, dy));
                 self.camera.set_position(v);
                 if self.ready() {
@@ -311,7 +311,7 @@ impl Component for Model<PerspectiveCamera> {
                 true
             }
             Msg::MoveStarted(x, y) => {
-                self.move_start = Some((x, y, self.camera.get_focus()));
+                self.move_start = Some((x, y, self.camera.focus()));
                 true
             }
             Msg::MoveEnded => {

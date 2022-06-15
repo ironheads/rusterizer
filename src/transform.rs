@@ -6,11 +6,6 @@ use crate::{
 
 const Z_DEPTH:f32 = 255.0;
 
-pub fn viewport(v: &Vec3f, width: i32, height: i32) -> Vec3f {
-    let x0 = (v.0 + 1.) * (width - 1) as f32 / 2.;
-    let y0 = (v.1 + 1.) * (height - 1) as f32 / 2.;
-    Vec3f(x0, y0, ((v.2 + 1.) / 2.) * 255.0)
-}
 
 pub fn get_viewport_matrix(w:i32, h:i32) -> Matrix<4,4> {
     let mut viewport = Matrix::identity();
@@ -18,8 +13,8 @@ pub fn get_viewport_matrix(w:i32, h:i32) -> Matrix<4,4> {
     viewport[1][1] = h as f32/ 2.;
     viewport[2][2] = Z_DEPTH / 2.;
 
-    viewport[0][3] = w as f32/ 2.;
-	viewport[1][3] = h as f32/ 2.;
+    viewport[0][3] = (w-1) as f32/ 2.;
+	viewport[1][3] = (h-1) as f32/ 2.;
 	viewport[2][3] = Z_DEPTH / 2.;
 
     viewport

@@ -4,9 +4,7 @@ use crate::{
     la::{Matrix, MatrixI, Vec3f},
     model::Model,
     tga::{self, Color},
-    transform::{viewport,barycentric,get_viewport_matrix},
-    utils::degrees_to_radians,
-
+    transform::{barycentric,get_viewport_matrix},
 };
 
 #[derive(Debug, Clone)]
@@ -25,7 +23,7 @@ impl ShaderConf {
             spec_light: true,
             texture: true,
             normals: true,
-            occlusion: true,
+            occlusion: false,
         }
     }
 }
@@ -52,14 +50,9 @@ impl Shader for LightShader<'_> {
         let v = self.model.vertex(face, vertex);
         let t = self.model.texture_coords(face, vertex);
 
-        for i in 0..2 {
-            // the vertex(whose id = vertex)'s u and v assigned in varying_uv 
-            self.varying_uv[i][vertex] = t[i];
-        }
-
         // calculate the postion in out_texture
-        let ss = viewport(&v, self.out_texture.width, self.out_texture.height);
-
+        let viewport_matrix = get_viewport_matrix(self.out_texture.width, self.out_texture.height);
+        let ss: Vec3f = viewport_matrix.mul(&v.embed::<4>(1f32)).into();
         // the vertex(whose id = vertex)'s  x,y,z (z is calculated in [0,255]) assigned in varying_uv
         self.varying_xy[0][vertex] = ss.0;
         self.varying_xy[1][vertex] = ss.1;
@@ -76,7 +69,13 @@ impl Shader for LightShader<'_> {
         let [[x], [y], [z]] = self.varying_xy.mul(&bar_mtrx);
         let x = x.round() as i32;
         let y = y.round() as i32;
-        
+        if  x < 0
+            || x >= self.out_texture.width
+            || y < 0
+            || y >= self.out_texture.height
+        {
+            return;
+        }
         let current_z = self.z_buffer.pixel_at(x, y) / 255.0;
         // let [[u],[v]] = self.varying_uv.mul(&bar_mtrx);
         let mut total = 0.0;

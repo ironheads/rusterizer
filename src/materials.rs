@@ -2,6 +2,7 @@ use crate::{
     ray::Ray,
     hit::{Hit,Hittable,HittableList},
     la::Vec3f,
+    utils::{random_hemisphere_vector,random_in_unit_sphere,random_unit_disk_vector,random_unit_vector,reflect,refract,other_refract},
 };
 use rand::{random};
 use std::sync::Arc;
@@ -33,7 +34,7 @@ impl Lambertian {
 impl Material for Lambertian {
     fn scatter(&self, _r_in: &Ray, rec: &Hit) -> Option<Scatter> {
         let normal = rec.normal.unwrap();
-        let mut scatter_direction = normal + Vec3f::random_unit_vector();
+        let mut scatter_direction = normal + random_unit_vector();
         if scatter_direction.near_zero() {
             scatter_direction = normal;
         }
@@ -65,10 +66,10 @@ impl Metal {
 
 impl Material for Metal {
     fn scatter(&self, r_in: &Ray, rec: &Hit) -> Option<Scatter> {
-        let reflected = Vec3f::reflect(&r_in.direction.normalize(), &rec.normal.unwrap());
+        let reflected = reflect(&r_in.direction.normalize(), &rec.normal.unwrap());
         let scattered = Ray {
             origin: rec.place,
-            direction: reflected + self.fuzz * Vec3f::random_in_unit_sphere(),
+            direction: reflected + self.fuzz * random_in_unit_sphere(),
         };
         let same_direction = scattered.direction.dot(&rec.normal.unwrap()) > 0.0;
         if same_direction {
@@ -115,9 +116,9 @@ impl Material for Dielectric {
         let cannot_refract = refraction_ratio * sin_theta > 1.0;
         let direction;
         if cannot_refract || (schlick(cos_theta, refraction_ratio) > random::<f32>()) {
-            direction = Vec3f::reflect(&unit_direction, &rec.normal.unwrap());
+            direction = reflect(&unit_direction, &rec.normal.unwrap());
         } else {
-            direction = Vec3f::other_refract(unit_direction, rec.normal.unwrap(), refraction_ratio);
+            direction = other_refract(unit_direction, rec.normal.unwrap(), refraction_ratio);
         }
 
         // let refracted = Vec3::refract(&unit_direction, &rec.normal.unwrap(), refraction_ratio);

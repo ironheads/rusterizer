@@ -1,7 +1,7 @@
 use std::ops::{Neg, Add, Sub, Mul, Div};
 use rand::distributions::{Distribution, Standard};
 use rand::{random, Rng};
-
+use lodepng::RGB;
 
 #[derive(Clone, Debug, Copy)]
 pub struct Vec3f(pub f32, pub f32, pub f32);
@@ -77,23 +77,34 @@ impl Vec3f {
         Vec3f(0.0, 0.0, 0.0)
     }
 
-    pub fn reflect(v: &Vec3f, n: &Vec3f) -> Vec3f {
-        v.sub(&v.dot(n).mul(*n).mulf(2f32))
+    pub fn to_u8(&self) -> [u8; 3] {
+        fn u(f: f32) -> u8 {
+            if f < 0.0 {
+                0
+            } else if f >= 1.0 {
+                255
+            } else {
+                (f * 255.999) as i32 as u8
+            }
+        }
+        [u(self.0), u(self.1), u(self.2)]
     }
 
-    // refract 
-    pub fn refract(v: &Vec3f, n: &Vec3f, etai_over_etat: f32) -> Vec3f {
-        let cos_theta = f32::min(v.mulf(-1f32).dot(n), 1.0);
-        let r_out_perp = etai_over_etat * (*v + cos_theta * (*n));
-        let r_out_parallel = libm::fabsf(1.0 - r_out_perp.length_squared()).sqrt() * -1.0 * *n;
-        r_out_perp + r_out_parallel
+    pub fn to_rgb(&self) -> RGB<u8> {
+        let rgb = &self.to_u8();
+        RGB::new(rgb[0], rgb[1], rgb[2])
     }
 
-    pub fn other_refract(uv: Vec3f, n: Vec3f, etai_over_etat: f32) -> Vec3f {
-        let cos_theta = (-uv).dot(&n);
-        let r_out_parallel = etai_over_etat * (uv + cos_theta * n);
-        let r_out_perp = -(1.0 - r_out_parallel.length_squared()).sqrt() * n;
-        r_out_parallel + r_out_perp
+    pub fn to_rgb_sampled(&self, samples_per_pixel: usize) -> RGB<u8> {
+        let scale = 1.0 / (samples_per_pixel as f32);
+        // Divide the color by the number of samples and gamma-correct for gamma=2.0.
+        let r = (scale * self.0 as f32).sqrt();
+        let r = (256.0 * f32::clamp(r, 0.0, 0.999)) as u8;
+        let g = (scale * self.1 as f32).sqrt();
+        let g = (256.0 * f32::clamp(g, 0.0, 0.999)) as u8;
+        let b = (scale * self.2 as f32).sqrt();
+        let b = (256.0 * f32::clamp(b, 0.0, 0.999)) as u8;
+        RGB::new(r, g, b)
     }
 
     pub fn embed<const L: usize>(&self, i: f32) -> Matrix<1, L> {
@@ -113,28 +124,6 @@ impl Vec3f {
         self.dot(&self).sqrt()
     }
 
-    pub fn random_in_unit_sphere() -> Vec3f {
-        loop {
-            let p = 2.0 * random::<Vec3f>() - Vec3f(1.0, 1.0, 1.0);
-            if p.length_squared() < 1.0 {
-                return p;
-            }
-        }
-    }
-
-    pub fn random_unit_vector() -> Vec3f {
-        loop {
-            let u = 2.0 * random::<f32>() - 1.0;
-            let v = 2.0 * random::<f32>() - 1.0;
-            let r2 = u*u+v*v;
-            if r2 < 1.0 {
-                let x = 2.0 * u * (1.0 - r2).sqrt();
-			    let y = 2.0 * v * (1.0 - r2).sqrt();
-			    let z = 1.0 - 2.0 * r2;
-                return Vec3f(x,y,z);
-            }
-        }
-    }
 
 
     pub fn x(&self) -> f32 {

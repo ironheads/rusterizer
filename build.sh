@@ -1,5 +1,5 @@
 #!/bin/bash
-
+cargo install --locked trunk 
 cat > index.html <<- EOM
 <!DOCTYPE html>
 <html>

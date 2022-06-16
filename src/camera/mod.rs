@@ -4,3 +4,4 @@ mod perspective_camera;
 
 pub use traits::{CameraTrait,Projectable};
 pub use basic_camera::{Camera,Direction};
+pub use perspective_camera::PerspectiveCamera;

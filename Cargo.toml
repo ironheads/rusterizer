@@ -5,8 +5,9 @@ authors = ["ironhead <iron_head@icloud.com>"]
 edition = "2021"
 
 [features]
-default = ["yew", "wasm-bindgen", "anyhow","raytracing"]
+default = ["yew", "wasm-bindgen", "anyhow"]
 raytracing = []
+
 
 [dependencies]
 wasm-bindgen = {version=">=0.2", optional = true}

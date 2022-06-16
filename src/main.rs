@@ -20,6 +20,7 @@ mod web;
 
 
 #[cfg(feature = "raytracing")]
+
 use utils::{random_scene,ray_color};
 use la::Vec3f;
 use camera::CameraTrait;

@@ -1,9 +1,11 @@
 use crate::{
-    ray::Ray,
     la::Vec3f,
-    materials::Material,
 };
 
+use super::{
+    materials::Material,
+    Ray,
+};
 use std::sync::Arc;
 
 // the attributes that the ray hit the hittable object

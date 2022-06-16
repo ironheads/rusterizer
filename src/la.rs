@@ -1,6 +1,6 @@
 use std::ops::{Neg, Add, Sub, Mul, Div};
 use rand::distributions::{Distribution, Standard};
-use rand::{random, Rng};
+use rand::Rng;
 use lodepng::RGB;
 
 #[derive(Clone, Debug, Copy)]

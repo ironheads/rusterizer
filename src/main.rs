@@ -1,4 +1,6 @@
 #![feature(generic_const_exprs)]
+#![allow(dead_code)]
+
 #[cfg(not(feature = "raytracing"))]
 extern crate anyhow;
 #[cfg(not(feature = "raytracing"))]
@@ -11,20 +13,20 @@ mod tga;
 mod camera;
 mod transform;
 mod utils;
-mod ray;
-mod materials;
-mod hit;
 mod objects;
+mod raytracing;
 #[cfg(not(feature = "raytracing"))]
 mod web;
 
 
 #[cfg(feature = "raytracing")]
-use ray::Ray;
-use hit::{Hit,Hittable,HittableList};
 use utils::{random_scene,ray_color};
 use la::Vec3f;
-use camera::{CameraTrait,ExposureCamera,Exposure};
+use camera::CameraTrait;
+use raytracing::{
+    ExposureCamera,
+    Exposure,
+};
 use indicatif::ProgressBar;
 use lodepng::RGB;
 use rayon::iter::IntoParallelIterator;

@@ -1,9 +1,9 @@
 use std::{f32::consts::PI, ops::Mul};
 use crate::{
     la::{Vec3f},
-    ray::Ray,
-    hit::{HittableList,Hittable},
-    materials::{Dielectric,Lambertian,Material,Metal},
+    raytracing::Ray,
+    raytracing::{HittableList,Hittable},
+    raytracing::materials::{Dielectric,Lambertian,Material,Metal},
     objects::Sphere,
 };
 use std::sync::Arc;

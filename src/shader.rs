@@ -48,8 +48,6 @@ impl Shader for LightShader<'_> {
 
     fn vertex(&mut self, face: usize, vertex: usize) -> Vec3f {
         let v = self.model.vertex(face, vertex);
-        let t = self.model.texture_coords(face, vertex);
-
         // calculate the postion in out_texture
         let viewport_matrix = get_viewport_matrix(self.out_texture.width, self.out_texture.height);
         let ss: Vec3f = viewport_matrix.mul(&v.embed::<4>(1f32)).into();
@@ -66,7 +64,7 @@ impl Shader for LightShader<'_> {
             return;
         }
         let bar_mtrx = bar.into();
-        let [[x], [y], [z]] = self.varying_xy.mul(&bar_mtrx);
+        let [[x], [y], _z] = self.varying_xy.mul(&bar_mtrx);
         let x = x.round() as i32;
         let y = y.round() as i32;
         if  x < 0

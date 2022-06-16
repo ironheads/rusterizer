@@ -1,12 +1,12 @@
 use crate::{
-    ray::Ray,
-    hit::{Hit,Hittable,HittableList},
     la::Vec3f,
-    utils::{random_hemisphere_vector,random_in_unit_sphere,random_unit_disk_vector,random_unit_vector,reflect,refract,other_refract},
+    utils::{random_in_unit_sphere,random_unit_vector,reflect,other_refract},
 };
 use rand::{random};
-use std::sync::Arc;
-
+use super::{
+    hit::Hit,
+    ray::Ray,
+};
 
 
 #[derive(Clone, Copy, Debug)]

@@ -2,10 +2,11 @@ use std::sync::Arc;
 
 use crate::{
     la::Vec3f,
-    ray::Ray,
-    hit::{Hittable,Hit},
-    materials::Material,
+    raytracing::Ray,
+    raytracing::{Hittable,Hit},
+    raytracing::materials::Material,
 };
+
 
 
 pub struct Sphere {

@@ -5,15 +5,15 @@ use crate::{
     tga::{Color, Image},
 };
 
-pub struct Model {
+pub struct MeshObject {
     pub model: Wavefront,
     pub normal_map: Image,
     pub texture: Image,
 }
 
-impl Model {
+impl MeshObject {
     pub fn new(wf: Wavefront, nm: Image, txt: Image) -> Self {
-        Model {
+        MeshObject {
             model: wf,
             normal_map: nm,
             texture: txt,
@@ -21,7 +21,7 @@ impl Model {
     }
 
     pub fn screen_texture_model() -> Self {
-        Model {
+        MeshObject {
             model: Wavefront {
                 vertices: vec![
                     Vec3f(-1.0, -1.0, 0.0),

@@ -7,14 +7,15 @@ extern crate anyhow;
 extern crate yew;
 
 mod la;
-mod model;
 mod shader;
 mod tga;
 mod camera;
 mod transform;
 mod utils;
-mod objects;
 mod raytracing;
+mod scene;
+mod models;
+mod render;
 #[cfg(not(feature = "raytracing"))]
 mod web;
 

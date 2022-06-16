@@ -7,8 +7,10 @@ use yew::services::{ConsoleService, FetchService};
 use yew::{html, Component, Html, NodeRef};
 
 use crate::la::{Matrix, MatrixI, Vec3f};
-use crate::model::{self, Wavefront};
-use crate::shader::{triangle, BasicShader, LightShader, Shader, ShaderConf};
+use crate::models::{MeshObject, Wavefront};
+use crate::shader::{BasicShader, LightShader, Shader, ShaderConf};
+use crate::render::triangle;
+
 use crate::tga::{Image,ZBuffer};
 use crate::camera::{self, CameraTrait, PerspectiveCamera, Projectable};
 
@@ -53,7 +55,7 @@ pub struct Model<T: CameraTrait + Projectable> where Model<T>: yew::Component {
     texture: Option<Image>,
     wavefront: Option<Wavefront>,
     normals: Option<Image>,
-    model: Option<model::Model>,
+    model: Option<MeshObject>,
     model_type: ModelType,
     camera: T,
     rotation_start: Option<(i32, i32, Vec3f)>,
@@ -99,7 +101,7 @@ impl<T> Model<T> where T:CameraTrait + Projectable,Model<T>: yew::Component, <Mo
             triangle(&vertices[0], &vertices[1], &vertices[2], &mut shader);
         }
 
-        let light_model = model::Model::screen_texture_model();
+        let light_model = MeshObject::screen_texture_model();
 
         if self.conf.occlusion {
             let mut occl_texture = Image::new(width, height);
@@ -140,7 +142,7 @@ impl<T> Model<T> where T:CameraTrait + Projectable,Model<T>: yew::Component, <Mo
     }
 
     fn prepare(&mut self) {
-        self.model = Some(model::Model::new(
+        self.model = Some(MeshObject::new(
             self.wavefront.take().unwrap(),
             self.normals.take().unwrap(),
             self.texture.take().unwrap(),
@@ -270,7 +272,19 @@ impl Component for Model<PerspectiveCamera> {
             }
             Msg::Upd((dx,dy,pos)) => {
                 let focus = self.camera.focus();
-                let v = focus.add(&pos.sub(&focus).rotate(dx, dy));
+                let z = (pos-focus).normalize();
+                let x = self.camera.get_up_vector().cross(&z).normalize();
+                let y = z.cross(&x).normalize();
+                // let p = self.camera.get_lookat().mul(&pos.sub(&focus).rotate(dx, dy).embed::<4>(1f32)).into();
+                let p = [
+                    [x.0, x.1, x.2, 0.0],
+                    [y.0, y.1, y.2, 0.0],
+                    [z.0, z.1, z.2, 0.0],
+                    [0.0, 0.0, 0.0, 1.0],
+                ].inverse();
+                let t = p.mul(&Vec3f(0.0,0.0,(pos-focus).length()).rotate(dx, dy).embed::<4>(1f32));
+                let v = focus.add(&t.into());
+                // ConsoleService::log(format!("v: {:?}", v).as_str());
                 self.camera.set_position(v);
                 if self.ready() {
                     self.render();
@@ -434,6 +448,7 @@ impl Component for Model<PerspectiveCamera> {
                 }
             })
             onmousedown=self.link.callback(move |e: MouseEvent| {
+                e.prevent_default();
                 // ConsoleService::log(format!("{:?}", e).as_str());
                 if e.button() == 0 {
                     Msg::RotationStarted(e.client_x(), e.client_y())
@@ -442,6 +457,7 @@ impl Component for Model<PerspectiveCamera> {
                 }
             })
             onmouseup=self.link.callback(move |e: MouseEvent| {
+                e.prevent_default();
                 if e.button() == 0 {
                     Msg::RotationEnded
                 } else {

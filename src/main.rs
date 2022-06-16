@@ -76,8 +76,8 @@ fn main() {
         for column in 0..WIDTH {
             let mut pixel_color = Vec3f(0.0, 0.0, 0.0);
             for _s in 0..SAMPLES_PER_PIXEL {
-                let u: f32 = (column as f32 + rng.gen_range(0.0..1.0)) / (WIDTH - 1) as f32;
-                let v: f32 = (height as f32 + rng.gen_range(0.0..1.0)) / (HEIGHT - 1) as f32;
+                let u: f32 = (column as f32 + rng.gen_range(0.0,1.0)) / (WIDTH - 1) as f32;
+                let v: f32 = (height as f32 + rng.gen_range(0.0,1.0)) / (HEIGHT - 1) as f32;
                 let r = camera.exposure_ray(u, v);
                 pixel_color = pixel_color + ray_color(&r, &world, MAX_DEPTH);
             }

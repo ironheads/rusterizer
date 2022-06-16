@@ -1,4 +1,3 @@
-use std::{f32::consts::PI, ops::Mul};
 use crate::{
     la::{Vec3f},
     raytracing::Ray,
@@ -9,37 +8,12 @@ use crate::{
 use std::sync::Arc;
 use rand::{random, Rng};
 
-pub fn degrees_to_radians(degrees: f32) -> f32 {
-    degrees * PI / 180.0
-}
-
-// reflect
-pub fn reflect(v: &Vec3f, n: &Vec3f) -> Vec3f {
-    v.sub(&v.dot(n).mul(*n).mulf(2f32))
-}
-
-// refract 
-pub fn refract(v: &Vec3f, n: &Vec3f, etai_over_etat: f32) -> Vec3f {
-    let cos_theta = f32::min(v.mulf(-1f32).dot(n), 1.0);
-    let r_out_perp = etai_over_etat * (*v + cos_theta * (*n));
-    let r_out_parallel = libm::fabsf(1.0 - r_out_perp.length_squared()).sqrt() * -1.0 * *n;
-    r_out_perp + r_out_parallel
-}
-
-pub fn other_refract(uv: Vec3f, n: Vec3f, etai_over_etat: f32) -> Vec3f {
-    let cos_theta = (-uv).dot(&n);
-    let r_out_parallel = etai_over_etat * (uv + cos_theta * n);
-    let r_out_perp = -(1.0 - r_out_parallel.length_squared()).sqrt() * n;
-    r_out_parallel + r_out_perp
-}
-
-
 pub fn random_color() -> Vec3f {
     random_color_in_range(0.0,1.0)
 }
 
 pub fn random_color_in_range(min: f32, max: f32) -> Vec3f {
-    let gen_range = || -> f32 { rand::thread_rng().gen_range(min..max) };
+    let gen_range = || -> f32 { rand::thread_rng().gen_range(min,max) };
     Vec3f(gen_range(), gen_range(), gen_range())
 }
 
@@ -53,7 +27,7 @@ pub fn random_in_unit_sphere() -> Vec3f {
 }
 
 pub fn random_unit_disk_vector() -> Vec3f {
-    let gen_range = || -> f32 { rand::thread_rng().gen_range(-1.0..1.0) };
+    let gen_range = || -> f32 { rand::thread_rng().gen_range(-1.0,1.0) };
     loop {
         let p = Vec3f(gen_range(), gen_range(), 0.0);
         if p.length_squared() < 1.0 {
@@ -117,7 +91,7 @@ pub fn random_scene() -> HittableList {
     }));
 
     let random_double_in_range =
-        |min: f32, max: f32| -> f32 { rand::thread_rng().gen_range(min..max) };
+        |min: f32, max: f32| -> f32 { rand::thread_rng().gen_range(min,max) };
     let random_double = || -> f32 { random_double_in_range(0.0, 1.0) };
 
     for a in -11..11 {

@@ -13,8 +13,6 @@ wasm-bindgen = {version=">=0.2", optional = true}
 yew = {version = "~0.18", optional = true}
 anyhow = {version=">=1", optional = true}
 libm = ">=0.2"
-getrandom = { version = ">=0.2", features = ["js"] }
-rand = "0.8.5"
 lodepng = "3.6.2"
 rayon = "1.5.3"
 indicatif = "0.16.2"
@@ -31,3 +29,11 @@ features = [
   "Node",
   "Window",
 ]
+
+[dependencies.rand]
+version = "0.7.3"
+features = ["wasm-bindgen"]
+
+[dependencies.getrandom]
+version = ">=0.2"
+features = ["js"]

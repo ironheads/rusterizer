@@ -275,7 +275,7 @@ async function load(module, imports) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('rusterizer-51a47678c515f18b_bg.wasm', import.meta.url);
+        input = new URL('rusterizer-b84d93e4d1a10a7e_bg.wasm', import.meta.url);
     }
     const imports = {};
     imports.wbg = {};

@@ -448,7 +448,7 @@ impl Component for Model<PerspectiveCamera> {
                 }
             })
             onmousedown=self.link.callback(move |e: MouseEvent| {
-                e.prevent_default();
+                // e.prevent_default();
                 // ConsoleService::log(format!("{:?}", e).as_str());
                 if e.button() == 0 {
                     Msg::RotationStarted(e.client_x(), e.client_y())
@@ -457,7 +457,7 @@ impl Component for Model<PerspectiveCamera> {
                 }
             })
             onmouseup=self.link.callback(move |e: MouseEvent| {
-                e.prevent_default();
+                // e.prevent_default();
                 if e.button() == 0 {
                     Msg::RotationEnded
                 } else {

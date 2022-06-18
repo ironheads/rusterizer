@@ -52,7 +52,7 @@ fn main() {
     const WIDTH: usize = 1200;
     const HEIGHT: usize = 800;
     const ASPECT: f32 = WIDTH as f32/ HEIGHT as f32;
-    const SAMPLES_PER_PIXEL: usize = 500;
+    const SAMPLES_PER_PIXEL: usize = 50;
     const MAX_DEPTH: usize = 50;
     // World
     let world = random_scene();

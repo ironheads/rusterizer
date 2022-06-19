@@ -2,6 +2,8 @@ use std::ops::{Neg, Add, Sub, Mul, Div};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use lodepng::RGB;
+use crate::tga;
+
 use super::{
     Matrix,
     MatrixI,
@@ -108,6 +110,18 @@ impl Vec3f {
         let b = (scale * self.2 as f32).sqrt();
         let b = (256.0 * f32::clamp(b, 0.0, 0.999)) as u8;
         RGB::new(r, g, b)
+    }
+
+    pub fn to_color(&self, samples_per_pixel: usize) -> tga::Color {
+        let scale = 1.0 / (samples_per_pixel as f32);
+        // Divide the color by the number of samples and gamma-correct for gamma=2.0.
+        let r = (scale * self.0 as f32).sqrt();
+        let r = (256.0 * f32::clamp(r, 0.0, 0.999)) as u8;
+        let g = (scale * self.1 as f32).sqrt();
+        let g = (256.0 * f32::clamp(g, 0.0, 0.999)) as u8;
+        let b = (scale * self.2 as f32).sqrt();
+        let b = (256.0 * f32::clamp(b, 0.0, 0.999)) as u8;
+        tga::Color(r,g,b)
     }
 
     pub fn embed<const L: usize>(&self, i: f32) -> Matrix<1, L> {

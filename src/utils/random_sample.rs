@@ -1,9 +1,10 @@
 use crate::{
     la::{Vec3f},
     raytracing::Ray,
-    raytracing::{HittableList,Hittable},
+    raytracing::{Hittable},
     raytracing::materials::{Dielectric,Lambertian,Material,Metal},
-    models::objects::Sphere,
+    models::objects::Sphere, 
+    scene::{RayTracingScene,SceneTrait},
 };
 use std::sync::Arc;
 use rand::{random, Rng};
@@ -59,7 +60,7 @@ pub fn random_hemisphere_vector(normal: &Vec3f) -> Vec3f {
     }
 }
 
-pub fn ray_color(ray: &Ray, world: &HittableList, depth: usize) -> Vec3f {
+pub fn ray_color(ray: &Ray, world: &RayTracingScene, depth: usize) -> Vec3f {
     const WHITE: Vec3f= Vec3f(1.0, 1.0, 1.0);
     const SKY_BLUE: Vec3f = Vec3f(0.5, 0.7, 1.0);
     // If we've exceeded the ray bounce limit, no more light is gathered.
@@ -81,8 +82,8 @@ pub fn ray_color(ray: &Ray, world: &HittableList, depth: usize) -> Vec3f {
     (1.0 - t) * WHITE + t * SKY_BLUE
 }
 
-pub fn random_scene() -> HittableList {
-    let mut world = HittableList::new();
+pub fn random_scene() -> RayTracingScene {
+    let mut world = RayTracingScene::new();
     let ground_material = Arc::new(Lambertian::new(Vec3f(0.5, 0.5, 0.5)));
     world.add(Box::new(Sphere {
         center: Vec3f(0.0, -1000.0, 0.0),

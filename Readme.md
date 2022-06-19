@@ -55,3 +55,7 @@ Rasterization Part was implemented by following the [ssloy/tinyrenderer](https:/
 
 RayTracing Part was implemented by following the [Ray Tracing in One Weekend](https://raytracing.github.io/books/RayTracingInOneWeekend.html) lessons.
 
+### Todos
+- [ ] make mesh hittable
+- [ ] when Rasterization, change objects's position 
+- [ ] To be contined.
